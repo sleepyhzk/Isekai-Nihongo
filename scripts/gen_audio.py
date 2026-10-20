@@ -1,7 +1,8 @@
 """Tạo file âm thanh cho mọi câu/từ trong app, theo từng giọng.
   - nanami : giọng thần kinh Microsoft (cần Internet):  pip install edge-tts
-  - zunko, mico, sayo, tsurugi, metan, rito, saeha, ryusei : giọng VOICEVOX (miễn phí). Cần cài app VOICEVOX
+  - zunko, sayo, tsurugi, metan, rito, saeha : giọng VOICEVOX (miễn phí). Cần cài app VOICEVOX
     (https://voicevox.hiroshiba.jp), MỞ app lên rồi mới chạy lệnh. Nên cài thêm ffmpeg để file nhẹ (mp3).
+Vai B trong Hội thoại tự chọn giọng nam nếu có (saeha, rito, keita); nên tạo ít nhất nanami + saeha.
 Chạy:  npm run audio        Chỉ vài giọng:  VOICES=nanami,zunko npm run audio
 (Windows PowerShell: $env:VOICES="nanami,zunko"; npm run audio)"""
 import asyncio, hashlib, json, os, shutil, subprocess, sys, urllib.parse, urllib.request
@@ -12,21 +13,21 @@ except ImportError:
 PROFILES = {
     "nanami":   ("edge", "ja-JP-NanamiNeural", "-5%", "+0Hz"),
     "zunko":    ("vv", "東北ずん子"),
-    "mico":     ("vv", "櫻歌ミコ"),
     "sayo":     ("vv", "小夜/SAYO"),
     "tsurugi":  ("vv", "中部つるぎ"),
     "metan":    ("vv", "四国めたん"),
     "rito":     ("vv", "離途"),
     "saeha":    ("vv", "黒沢冴白"),
-    "ryusei":   ("vv", "青山龍星"),
+    "keita":    ("edge", "ja-JP-KeitaNeural", "-5%", "+0Hz"),   # giọng nam Microsoft, mặc định KHÔNG tạo (thêm vào VOICES nếu muốn)
 }
+OPTIONAL = {"keita"}
 VV = os.environ.get("VOICEVOX_URL", "http://127.0.0.1:50021"); FF = shutil.which("ffmpeg")
-SEL = [v for v in os.environ.get("VOICES", ",".join(PROFILES)).split(",") if v in PROFILES]
+SEL = [v for v in os.environ.get("VOICES", ",".join(p for p in PROFILES if p not in OPTIONAL)).split(",") if v in PROFILES]
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-JS = '''import {T} from "./src/data.js";import {V,V2} from "./src/vocab.js";import {GR} from "./src/grammar.js";import {ALLK} from "./src/kana.js";
+JS = '''import {T} from "./src/data.js";import {V,V2} from "./src/vocab.js";import {GR} from "./src/grammar.js";import {ALLK} from "./src/kana.js";import {DL} from "./src/dialogues.js";import {PH_TEXTS} from "./src/phonetics.js";import {PS} from "./src/passages.js";import {RD} from "./src/reading.js";
 const a=[];T.forEach(t=>t[1].split("\\n").forEach(l=>a.push(l.split("/")[0])));
 [...V,...V2].forEach(t=>t[1].split("\\n").forEach(l=>{const p=l.split("|");a.push(p[1]);if(p[3])a.push(p[3])}));
-GR.forEach(l=>l[1].forEach(p=>p[3].forEach(e=>a.push(e[0]))));ALLK.forEach(c=>a.push(c));
+GR.forEach(l=>l[1].forEach(p=>p[3].forEach(e=>a.push(e[0]))));ALLK.forEach(c=>a.push(c));DL.forEach(d=>d[1].forEach(x=>a.push(x[1])));PH_TEXTS.forEach(t=>a.push(t));PS.forEach(p=>p[2].forEach(e=>a.push(e[0])));RD.forEach(p=>p[3].forEach(e=>a.push(e[0])));
 console.log(JSON.stringify([...new Set(a)]))'''
 
 def http(path, data=None, js=False):
@@ -69,8 +70,16 @@ async def main():
     texts = json.loads(subprocess.check_output(["node", "--input-type=module", "-e", JS], cwd=ROOT))
     out = os.path.join(ROOT, "public", "audio"); os.makedirs(out, exist_ok=True)
     ip = os.path.join(out, "index.json")
-    idx = json.load(open(ip, encoding="utf-8")) if os.path.exists(ip) else {}
-    if not all(isinstance(v, dict) for v in idx.values()): idx = {}
+    idx = {}
+    for fn in os.listdir(out):  # đọc lại chỉ mục từng giọng đã có (index-<giọng>.json)
+        if fn.startswith("index-") and fn.endswith(".json"):
+            try: idx[fn[6:-5]] = json.load(open(os.path.join(out, fn), encoding="utf-8"))
+            except Exception: pass
+    if not idx and os.path.exists(ip):  # định dạng cũ: một file index.json chứa mọi giọng
+        try:
+            old = json.load(open(ip, encoding="utf-8"))
+            if all(isinstance(v, dict) for v in old.values()) and "voices" not in old: idx = old
+        except Exception: pass
     jobs = [(p, t) for p in sel for t in texts]
     es, vs = asyncio.Semaphore(4), asyncio.Semaphore(2); done = 0; fail = 0
     async def one(p, t):
@@ -89,7 +98,9 @@ async def main():
         done += 1
         if done % 50 == 0: print(f"{done}/{len(jobs)}")
     await asyncio.gather(*(one(p, t) for p, t in jobs))
-    json.dump(idx, open(ip, "w", encoding="utf-8"), ensure_ascii=False)
+    for p, m in idx.items():  # mỗi giọng một file; web chỉ tải giọng đang dùng
+        json.dump(m, open(os.path.join(out, f"index-{p}.json"), "w", encoding="utf-8"), ensure_ascii=False, separators=(",", ":"))
+    json.dump({"voices": {p: len(m) for p, m in idx.items()}}, open(ip, "w", encoding="utf-8"), ensure_ascii=False)  # danh sách giọng, rất nhẹ
     print(f"Xong: {len(jobs)-fail}/{len(jobs)} file ({', '.join(sel) or 'không có giọng nào'}). Lỗi: {fail} (chạy lại để thử tiếp).")
 
 asyncio.run(main())

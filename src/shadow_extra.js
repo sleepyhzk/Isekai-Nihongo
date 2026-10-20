@@ -1,0 +1,35 @@
+// Câu bổ sung cho Shadowing (tự soạn, bám ngữ pháp Bài 1: N は N です / じゃありません / か / も / の).
+// Khóa = id bộ câu: "gp0" là Ngữ pháp Bài 1 – Giới thiệu bản thân.
+export const SHX={
+gp0:[
+["はじめまして。","Rất vui được gặp lần đầu."],
+["私はタイです。","Tôi là Tài."],
+["私はベトナム人です。","Tôi là người Việt Nam."],
+["私は二十歳です。","Tôi 20 tuổi."],
+["私は大学生です。","Tôi là sinh viên đại học."],
+["私は会社員です。","Tôi là nhân viên công ty."],
+["私はエンジニアです。","Tôi là kỹ sư."],
+["私はプログラマーです。","Tôi là lập trình viên."],
+["私は看護師です。","Tôi là y tá."],
+["私は先生じゃありません。","Tôi không phải là giáo viên."],
+["私は医者じゃありません。","Tôi không phải là bác sĩ."],
+["私は日本人じゃありません。","Tôi không phải là người Nhật."],
+["私は日本語の学生です。","Tôi là sinh viên tiếng Nhật."],
+["失礼ですが、お名前は何ですか。","Xin lỗi, bạn tên là gì ạ?"],
+["あなたはリンさんですか。","Bạn là Linh phải không?"],
+["はい、リンです。","Vâng, tôi là Linh."],
+["いいえ、リンじゃありません。ミンです。","Không, tôi không phải Linh. Tôi là Minh."],
+["あなたは会社員ですか。","Bạn là nhân viên công ty à?"],
+["いいえ、会社員じゃありません。学生です。","Không, tôi không phải nhân viên công ty. Tôi là sinh viên."],
+["あなたもベトナム人ですか。","Bạn cũng là người Việt Nam à?"],
+["はい、私もベトナム人です。","Vâng, tôi cũng là người Việt Nam."],
+["いいえ、私は日本人です。","Không, tôi là người Nhật."],
+["田中さんは何歳ですか。","Anh Tanaka bao nhiêu tuổi?"],
+["田中さんは三十歳です。","Anh Tanaka 30 tuổi."],
+["こちらは田中さんです。","Đây là anh Tanaka."],
+["あの方はどなたですか。","Vị kia là ai ạ?"],
+["あの方は山田先生です。","Vị kia là thầy Yamada."],
+["山田さんは銀行員です。","Anh Yamada là nhân viên ngân hàng."],
+["リンさんも学生です。","Linh cũng là sinh viên."],
+["こちらこそ、よろしくお願いします。","Tôi cũng rất mong được giúp đỡ."]
+]};

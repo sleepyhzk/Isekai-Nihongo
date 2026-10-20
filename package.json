@@ -10,7 +10,8 @@
     "audio": "python scripts/gen_audio.py",
     "analyze": "node scripts/analyze.mjs",
     "predev": "node scripts/analyze.mjs",
-    "prebuild": "node scripts/analyze.mjs"
+    "prebuild": "node scripts/analyze.mjs",
+    "splitindex": "node scripts/split_index.mjs"
   },
   "devDependencies": {
     "vite": "^5.4.0"
