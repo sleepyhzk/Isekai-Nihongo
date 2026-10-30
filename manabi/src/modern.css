@@ -659,3 +659,10 @@ main:has(.apt-w){max-width:1280px}
 .apt td.py{white-space:normal;word-break:keep-all;overflow-wrap:normal}
 .apt td.ct{font-size:18px;padding-left:10px}
 .apt td.us{min-width:0;width:150px;font-size:12px;line-height:1.35}
+
+/* Ghi nhớ trong Phụ lục */
+.nchw{position:relative;display:inline-flex}
+.cst{position:absolute;top:2px;right:3px;width:20px;height:20px;padding:0;border:0;background:transparent;color:var(--mu,#8a86a8);font-size:12px;line-height:20px;cursor:pointer;opacity:.6;transition:.15s;border-radius:50%}
+.cst:hover{opacity:1;color:var(--pk,#ec4899)}
+.cst.on{opacity:1;color:var(--pk,#ec4899)}
+.apt td.py{position:relative}
