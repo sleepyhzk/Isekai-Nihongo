@@ -47,11 +47,11 @@ function pick(){if(!HASTTS)return;const v=speechSynthesis.getVoices().filter(x=>
 if(HASTTS){pick();speechSynthesis.onvoiceschanged=pick}
 let sayGen=0;
 const stopSay=()=>{sayGen++;if(au){au.onended=au.onerror=null;try{au.pause()}catch(e){}au=null}if(HASTTS&&(speechSynthesis.speaking||speechSynthesis.pending))speechSynthesis.cancel()};
-const MALEV=["saeha","rito","keita"],okV=k=>k=="nanami"||!!CN[k];
+const MALEV=["rito","keita"],okV=k=>k=="nanami"||!!CN[k];
 const AC=new Map();
 function getAu(f){let a=AC.get(f);if(a&&a.error){AC.delete(f);a=null}if(!a){a=new Audio();a.preload="auto";a.src=BASE+"audio/"+f;AC.set(f,a);if(AC.size>80){const k=AC.keys().next().value,o=AC.get(k);AC.delete(k);if(o&&o!==au){o.removeAttribute("src");o.load()}}}return a}
 /* Giọng vai B được chốt MỘT LẦN cho cả bài (không đổi theo từng câu) */
-function voiceB(){if(BV)return BV;const n=p=>AVL[p]|0;let r="browser";if(VB=="browser")r="browser";else if(VB!="auto"&&okV(VB)&&n(VB))r=VB;else{const m=MALEV.filter(p=>p!=VC&&n(p));if(m.length)r=m[0];else{const o=Object.keys(AVL).filter(p=>okV(p)&&p!=VC&&n(p)).sort((a,b)=>n(b)-n(a));if(o.length)r=o[0]}}if(AML)BV=r;return r}
+function voiceB(){if(BV)return BV;const n=p=>AVL[p]|0;let r="browser";if(VB!="auto"&&okV(VB)&&n(VB))r=VB;else{const m=MALEV.filter(p=>p!=VC&&n(p));if(m.length)r=m[0];else{const o=Object.keys(AVL).filter(p=>okV(p)&&p!=VC&&n(p)).sort((a,b)=>n(b)-n(a));if(o.length)r=o[0]}}if(AML)BV=r;return r}
 /* Chọn file âm thanh cho câu t theo vai; trả về {f,v} hoặc null (dùng giọng trình duyệt) */
 function srcOf(t,role){const ok=p=>p&&p!="browser"&&AM[p]&&AM[p][t];if(role=="B"){for(const p of[voiceB(),...MALEV.filter(p=>p!=VC)])if(ok(p))return{f:AM[p][t],v:p};return null}for(const p of[VC,"nanami"])if(ok(p))return{f:AM[p][t],v:p};return null}
 const FBW=new Set();
@@ -233,7 +233,9 @@ try{const z=JSON.parse(localStorage.getItem("shp")||"{}");if(z.m==="p"||z.m==="d
 if(![.5,.75,1].includes(SHO.sp))SHO.sp=1;
 hs.forEach(j=>{if(!SHV[j]){const m=WORD_MEANING(j);if(m)SHV[j]=m}});
 let CM={};try{CM=JSON.parse(localStorage.getItem("cmx")||"{}")}catch(e){}Object.keys(CM).forEach(k=>{if(hs.has(k))SHV[k]=CM[k]});
+function vandapOpen(){leave();stopSay();backFn=home;$("#back").hidden=false;import("./vandap.js").then(M=>M.vandap({$,say,stopSay,toast,BASE,warm,shadow,setExit:f=>{shExit=f}})).catch(e=>{console.error(e);toast("Không mở được mục Vấn đáp")})}
 function shadow(m,i){
+if(m=="q"){vandapOpen();return}
 leave();stopSay();backFn=home;$("#back").hidden=false;
 if(m)shm=m;if(i!=null)shi[shm]=i;
 const L=shm=="d"?SHD:shm=="r"?SHR:SHP,dlg=shm=="d",li=Math.min(Math.max(0,shi[shm]||0),L.length-1);shi[shm]=li;
@@ -261,21 +263,21 @@ const replay=()=>pickIdx(idx,1);
 const toggleRec=async()=>{if(recording){try{rec.stop()}catch(e){}return}stopAuto();stopAll();const k=idx;try{const st=await navigator.mediaDevices.getUserMedia({audio:true}),ch=[];rec=new MediaRecorder(st);rec.ondataavailable=e=>ch.push(e.data);rec.onstop=()=>{st.getTracks().forEach(t=>t.stop());recording=false;if(mine[k])URL.revokeObjectURL(mine[k]);mine[k]=URL.createObjectURL(new Blob(ch));paint()};rec.start();recording=true;paint()}catch(e){toast("Không mở được micro. Hãy cho phép quyền micro cho trang này.")}};
 const tg=(k,v,lab)=>`<button data-${k}="${v}" class="${SHO[k]==v?"on":""}">${lab}</button>`;
 $("#app").innerHTML=`<div style="color:#818cf8;font-size:12px">音読 · Shadowing</div><h1 class="sh-h">${shm=="r"?"":"Bài "}${set.n} · ${set.title}</h1>
-<div class="shm"><button class="shmb ${dlg?"on":""}" data-m="d"><span class="shi">🗣</span><b>Hội thoại 2 người</b><small>会話 · Nghe rồi nói theo vai A / B</small></button><button class="shmb ${shm=="p"?"on":""}" data-m="p"><span class="shi">📖</span><b>Đoạn văn 1 người</b><small>文章 · Mỗi bài một đoạn văn theo từ vựng và Hán tự của bài</small></button><button class="shmb ${shm=="r"?"on":""}" data-m="r"><span class="shi">📝</span><b>Luyện đọc</b><small>読み物 · 138 đoạn ngắn: L1–L3 của bạn và 94 đoạn theo từ vựng, chữ Hán từng bài (Bài 4–50)</small></button></div>
+<div class="shm"><button class="shmb ${dlg?"on":""}" data-m="d"><span class="shi">🗣</span><b>Hội thoại 2 người</b><small>会話 · Nghe rồi nói theo vai A / B</small></button><button class="shmb ${shm=="p"?"on":""}" data-m="p"><span class="shi">📖</span><b>Đoạn văn 1 người</b><small>文章 · Mỗi bài một đoạn văn theo từ vựng và Hán tự của bài</small></button><button class="shmb ${shm=="r"?"on":""}" data-m="r"><span class="shi">📝</span><b>Luyện đọc</b><small>読み物 · 138 đoạn ngắn: L1–L3 của bạn và 94 đoạn theo từ vựng, chữ Hán từng bài (Bài 4–50)</small></button><button class="shmb" data-m="q"><span class="shi">💬</span><b>Vấn đáp</b><small>問答 · Nghe câu hỏi rồi tự trả lời, có tranh và không tranh (FE JPD113)</small></button></div>
 ${shm=="r"?`<div class="rgp" id="rgp">${RG.map((g,k)=>`<button class="${k==rg?"on":""}" data-g="${k}">${g[0]}</button>`).join("")}</div>`:""}<div class="sht" id="sht">${L.map((x,k)=>`<button class="${k==li?"on":""}" data-t="${k}"${shm=="r"&&!RG[rg][1](x)?" hidden":""}><i>${x.n}</i>${x.title}${shd.has(x.id)?" ✓":""}</button>`).join("")}</div>
 <div class="shw"><div class="shl"><div class="shs">${scene(set.scene,shm,set.si)}</div><div class="shc">
 <div id="shmeta"></div><div class="shsj"><button class="ib sst" id="shst" title="Ghi nhớ câu này (↓)">★</button><div id="shj"></div></div><div id="shr"></div><div id="shv"></div><div id="shwd"></div><div class="shturn" id="shturn" hidden>🎤 Đến lượt bạn: hãy nói câu này</div>
 <div class="gbar" id="gp"><i></i></div>
 <input type="range" class="shrg" id="shrg" min="0" max="${Math.max(0,N-1)}" value="0" aria-label="Chọn câu">
 <div class="shctl"><button class="big" id="au" title="Tự động nghe và nói theo (Space)">▶</button><button class="sm2" id="pv" title="Câu trước (←)">⏮</button><button class="sm2" id="nx" title="Câu sau (→)">⏭</button><button class="sm2" id="rp" title="Nghe lại câu này (R)">🔊</button><button class="sm2" id="rc" title="Ghi âm giọng bạn">🎤</button><button class="sm2" id="mp" title="Nghe lại giọng bạn" hidden>▶︎</button><span class="sp">${[.5,.75,1].map(v=>tg("sp",v,v+"×")).join("")}<button id="lp" class="${SHO.loop?"on":""}" title="Lặp lại câu hiện tại (L)">⟳ Lặp câu</button><button id="ct" class="${SHO.cont?"on":""}" title="Đọc liền một mạch đến hết đoạn, không dừng chờ bạn nói theo (C)">▶▶ Đọc liền</button></span></div>
-<div class="shopt"><span class="tg2">${tg("tg","j","Chữ Nhật")}${tg("tg","r","Romaji")}${tg("tg","v","Nghĩa")}${tg("tg","w","Từ")}</span>${dlg?`<span class="tg2">${[0,"A","B"].map(r=>`<button data-role="${r}" class="${(SHO.role||0)==r?"on":""}">${r==0?"Nghe cả hai vai":"Tôi nói vai "+r}</button>`).join("")}</span><select class="pill" id="vbs" title="Giọng vai B"><option value="auto">Giọng B: tự chọn (ưu tiên nam)</option>${Object.keys(AVL).filter(okV).map(k=>`<option value="${k}">${k=="nanami"?"Nanami (nữ)":CN[k]||k}</option>`).join("")}<option value="browser">Giọng trình duyệt</option></select>`:""}</div>
+<div class="shopt"><span class="tg2">${tg("tg","j","Chữ Nhật")}${tg("tg","r","Romaji")}${tg("tg","v","Nghĩa")}${tg("tg","w","Từ")}</span>${dlg?`<span class="tg2">${[0,"A","B"].map(r=>`<button data-role="${r}" class="${(SHO.role||0)==r?"on":""}">${r==0?"Nghe cả hai vai":"Tôi nói vai "+r}</button>`).join("")}</span><select class="pill" id="vbs" title="Giọng vai B"><option value="auto">Giọng B: tự chọn (ưu tiên nam)</option>${Object.keys(AVL).filter(okV).map(k=>`<option value="${k}">${k=="nanami"?"Nanami (nữ)":CN[k]||k}</option>`).join("")}</select>`:""}</div>
 <div class="shhint">Space: tự động nghe/nói · ←/→: đổi câu · R: nghe lại · L: lặp · C: đọc liền · ↓: ★ ghi nhớ</div></div></div>
 <div class="shr2"><h4>${dlg?"Hội thoại":"Nội dung đoạn văn"} <span>${N} câu</span></h4>${dlg?"":`<div class="pvt"><button data-pv="0">Từng câu</button><button data-pv="1">Cả đoạn</button></div>`}<div id="shli"></div></div></div>`;
 function paint(){const it=cur(),a=AN[it.j];
 $("#shmeta").innerHTML=`<span>▤ câu ${idx+1}/${N}</span>${dlg?`<span class="spk ${it.sp}">${it.sp}</span>`:""}`;
 const sg=segment(it.j),PU=/^[、。！？・「」]$/;
 $("#shj").innerHTML=SHO.j?sg.map(c=>c.sp?" ":`<span class="tk"${c.ro&&c.ro!=c.s&&/[a-z]/i.test(c.ro)?` data-r="${c.ro}"`:""}>${c.s}</span>`).join(""):'<span class="m" style="font-size:20px">Nghe rồi nói theo…</span>';
-$("#shr").textContent=SHO.r?sg.filter(c=>!c.sp&&!PU.test(c.s)).map(c=>c.ro||c.s).join(" "):"";document.querySelectorAll("#shj .tk").forEach(k=>k.onclick=()=>{document.querySelectorAll("#shj .tk.on").forEach(x=>x.classList.remove("on"));k.classList.add("on");clearTimeout(window._tkT);window._tkT=setTimeout(()=>k.classList.remove("on"),1500);const wt=k.textContent.trim();if(!wt||PU.test(wt))return;if(recording&&rec)return;stopAuto();stopAll();say(wt,SHO.sp)});$("#shv").textContent=SHO.v?it.v:"";
+$("#shr").textContent=SHO.r?sg.filter(c=>!c.sp&&!PU.test(c.s)).map(c=>c.ro||c.s).join(" "):"";document.querySelectorAll("#shj .tk").forEach(k=>k.onclick=()=>{document.querySelectorAll("#shj .tk.on").forEach(x=>x.classList.remove("on"));k.classList.add("on");const wt=k.textContent.trim();if(!wt||PU.test(wt))return;if(recording&&rec)return;stopAuto();stopAll();say(wt,SHO.sp)});$("#shv").textContent=SHO.v?it.v:"";
 const wl=[],ws=new Set();sg.forEach(c=>{if(c.sp||PU.test(c.s)||ws.has(c.s))return;ws.add(c.s);wl.push(c)});wl.forEach(c=>warm(c.s));
 $("#shwd").innerHTML=SHO.w?`<div class="wd-h">Phân tích từ <span>${wl.length} từ · bấm chữ để nghe, bấm ★ để học</span></div><div class="wd-l">${wl.map((c,k)=>`<div class="wd-c${c.m?"":" wd-nm"}${hs.has(c.s)?" wd-st":""}"><button class="wd-s" data-w="${k}" title="Thêm vào Ghi nhớ">★</button><button class="wd-j" data-wp="${k}">${c.s}</button><div class="wd-r">${c.h&&c.h!=c.s?c.h+" · ":""}${c.ro||""}</div><div class="wd-m">${c.m||"Chưa có nghĩa"}</div>${c.g&&!c.fn?`<div class="wd-g">${c.g}</div>`:""}</div>`).join("")}</div>`:"";
 document.querySelectorAll("#shwd [data-wp]").forEach(b=>b.onclick=()=>{stopAuto();stopAll();say(wl[+b.dataset.wp].s,SHO.sp);paint()});
@@ -630,7 +632,7 @@ let hp=!!(history.state&&history.state.a);
 new MutationObserver(()=>{const vis=!$("#back").hidden;if(vis&&!hp){hp=true;history.pushState({a:1},"")}}).observe($("#back"),{attributes:true,attributeFilter:["hidden"]});
 addEventListener("popstate",e=>{if(e.state&&e.state.a){hp=true;return}if(!hp)return;hp=false;closePops();if($("#back").hidden){history.back();return}backFn();if(!$("#back").hidden){hp=true;history.pushState({a:1},"")}});
 
-const CN={zunko:"東北ずん子",sayo:"小夜/SAYO",tsurugi:"中部つるぎ",metan:"四国めたん",rito:"離途",saeha:"黒沢冴白",keita:"Keita (nam)"},cr=()=>{};
-if(!CN[VC]&&VC!="nanami"&&VC!="browser")VC="nanami";
+const CN={zunko:"東北ずん子",tsurugi:"中部つるぎ",metan:"四国めたん",rito:"離途",keita:"Keita (nam)"},cr=()=>{};
+if(!CN[VC]&&VC!="nanami")VC="nanami";
 const sel=$("#vc");sel.value=VC;cr();sel.onchange=()=>{VC=sel.value;BV=null;FBW.clear();ensure(VC);try{localStorage.setItem("vc",VC)}catch(e){}cr();say("こんにちは")};
 save();home();
