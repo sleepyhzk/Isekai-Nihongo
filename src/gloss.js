@@ -156,3 +156,4 @@ function segRun(w, out) {
 }
 export const WORD_MEANING = s => { build(); const e = D.get(s); return e && e.m ? e.m + (e.g && !e.fn ? " (" + e.g + ")" : "") : ""; };
 export const wordRomaji = s => { build(); const e = D.get(s); return e && e.h ? (e.ro ? e.h : rm(e.h)) : ""; };
+export const kanaRomaji = s => rm(s);

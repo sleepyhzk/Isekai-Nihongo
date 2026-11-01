@@ -2,7 +2,7 @@ import './style.css';
 import './modern.css';
 import { T } from './data.js';
 import { RD } from './reading.js';
-import { segment, WORD_MEANING, wordRomaji } from './gloss.js';
+import { segment, WORD_MEANING, wordRomaji, kanaRomaji } from './gloss.js';
 import { V, V2, COURSES } from './vocab.js';
 import { KH, KD } from './kanji.js';
 import { GR } from './grammar.js';
@@ -581,11 +581,19 @@ function quick(all){leave();backFn=()=>{leave();memo()};const q=[...all].sort(()
 const end=()=>{leave();$("#app").innerHTML=`<div class="intro"><h1>Hoàn thành!</h1><div class="chips2"><span class="c1"><b>${ok.length}</b> thuộc</span><span class="c2">${no.length} chưa thuộc</span></div><div class="acts2" style="justify-content:flex-start;margin-top:22px">${no.length?`<button class="go" id="rn">Ôn ${no.length} mục chưa thuộc</button>`:""}<button class="pill alt" id="ag">Ôn lại tất cả</button>${ok.length?`<button class="pill alt" id="rm">Bỏ ${ok.length} mục đã thuộc khỏi Ghi nhớ</button>`:""}<button class="pill alt" id="bk2">Về Ghi nhớ</button></div></div>`;
 if(no.length)$("#rn").onclick=()=>quick(no);$("#ag").onclick=()=>quick(items());$("#bk2").onclick=memo;
 if(ok.length)$("#rm").onclick=()=>{ok.forEach(del);persist();toast("Đã cập nhật Ghi nhớ");memo()}};
-const show=()=>{if(n>=q.length)return end();const it=q[n];
+const QK="qf",PUN=/^[、。！？・「」]$/;let QF;try{QF={j:1,r:0,o:0,v:0,...JSON.parse(localStorage.getItem(QK)||"{}")}}catch(e){QF={j:1,r:0,o:0,v:0}}
+const toks=t=>{try{return segment(t).filter(c=>!c.sp&&!PUN.test(c.s))}catch(e){return[]}};
+const isKana=t=>/^[\u3040-\u30ff\u30fc\s]+$/.test(t);
+const hiraOf=it=>it.t=="v"||it.t=="k"?(it.rd||""):it.t=="g"?"":isKana(it.jp)?it.jp:toks(it.jp).map(c=>c.h||c.s).join(" ");
+const romOf=it=>{if(it.t=="k"||it.t=="g")return"";if(it.t=="h"&&/[a-z]/i.test(it.rd||""))return it.rd;const src=it.t=="v"&&it.rd?it.rd:it.jp;return isKana(src)?kanaRomaji(src.replace(/\s/g,"")):toks(src).map(c=>c.ro||c.s).join(" ")};
+const show=()=>{if(n>=q.length)return end();const it=q[n];let fl=false;
 $("#app").innerHTML=`<div class="top"><div class="stat"><span class="ai s1">▤</span><div><b>${n+1}/${q.length}</b><small>thẻ</small></div></div><div class="stat"><span class="ai g">✓</span><div><b style="color:#16a34a">${ok.length}</b><small>thuộc</small></div></div><div class="stat"><span class="ai r">✗</span><div><b style="color:#e11d48">${no.length}</b><small>chưa thuộc</small></div></div></div>
-<div class="pbar"><i style="width:${n/q.length*100}%"></i></div><div class="dw"><div class="fc" id="fc"><span class="tag">${TY[it.t][0]}</span><div class="fj ${it.t} ${(it.t=="s"||it.t=="h"||(it.t!="k"&&it.jp.length>10))?"s":""} ${it.jp.length>26?"l":""}">${it.jp}</div><div id="fb2" hidden>${it.rd?`<div class="mr">${it.rd}</div>`:""}<div class="mv" style="font-size:20px;margin-top:6px">${it.vi}</div></div><p class="m" id="hint">Nhấn <kbd>Space</kbd> để xem nghĩa</p></div>
+<div class="pbar"><i style="width:${n/q.length*100}%"></i></div><div class="fchips fqo"><span class="m">Mặt trước hiện:</span>${[["j","Chữ Nhật"],["r","Cách đọc"],["o","Romaji"],["v","Nghĩa"]].map(([k,t])=>`<button class="${QF[k]?"go":"pill alt"}" data-qf="${k}">${t}</button>`).join("")}</div><div class="dw"><div class="fc" id="fc"><span class="tag">${TY[it.t][0]}</span><div class="fj ${it.t} ${(it.t=="s"||it.t=="h"||(it.t!="k"&&it.jp.length>10))?"s":""} ${it.jp.length>26?"l":""}" id="fq_j">${it.jp}</div><div class="mr" id="fq_r">${hiraOf(it)}</div><div class="mr" id="fq_o">${romOf(it)}</div><div class="mv" id="fq_v" style="font-size:20px;margin-top:6px">${it.vi}</div><p class="m" id="hint">Nhấn <kbd>Space</kbd> để hiện đủ chữ Nhật, cách đọc, romaji và nghĩa</p></div>
 <div class="acts2"><button class="pill alt" id="no">← Chưa thuộc</button><button class="go" id="yes">Thuộc →</button></div></div>`;
-const flip=()=>{const b=$("#fb2");b.hidden=!b.hidden;$("#hint").hidden=!b.hidden;if(!b.hidden)say(it.say)};
+const has={j:!!it.jp,r:!!hiraOf(it),o:!!romOf(it),v:!!it.vi};
+const paint=()=>{let any=false;const vis={};for(const k of["j","r","o","v"]){vis[k]=fl?has[k]:(QF[k]&&has[k]);any=any||vis[k]}if(!any)vis.j=true;for(const k of["j","r","o","v"])$("#fq_"+k).hidden=!vis[k];$("#hint").hidden=fl};
+const flip=()=>{fl=!fl;paint();if(fl)say(it.say)};paint();
+document.querySelectorAll("[data-qf]").forEach(b=>{noFocus(b);b.onclick=e=>{e.stopPropagation();QF[b.dataset.qf]=QF[b.dataset.qf]?0:1;if(!QF.j&&!QF.r&&!QF.o&&!QF.v)QF.j=1;try{localStorage.setItem(QK,JSON.stringify(QF))}catch(x){}show()}});
 const mk=g=>{(g?ok:no).push(it);n++;show()};
 ["#no","#yes"].forEach(s=>noFocus($(s)));$("#fc").onclick=flip;$("#no").onclick=()=>mk(0);$("#yes").onclick=()=>mk(1);
 KEY=e=>{if(e.key==" "){e.preventDefault();flip()}else if(e.key=="ArrowRight"){e.preventDefault();mk(1)}else if(e.key=="ArrowLeft"){e.preventDefault();mk(0)}}};

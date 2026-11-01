@@ -730,3 +730,9 @@ main:has(.apt-w){max-width:1280px}
 .vd-qj.hid:not(.peek)~.vd-qr,.vd-qj.hid:not(.peek)~.vd-qv{display:none}
 .vd-wd{margin-top:14px}
 .vd-qj.hid:not(.peek)~.vd-wd{display:none}
+
+.fc [hidden]{display:none!important}
+.fqo{justify-content:center;align-items:center;margin:10px 0 2px}
+.fqo .m{margin:0 4px 0 0;font-size:13px}
+.fqo button{padding:6px 14px;font-size:13px}
+.fc .mr{margin-top:8px;font-size:18px;color:var(--mu)}
