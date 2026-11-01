@@ -799,4 +799,13 @@ pork|ポーク|Thịt lợn (tiếng Anh)
 なんがい|なんがい|Tầng mấy
 A|エー|A (ký hiệu người A)
 しちがつ|しちがつ|Tháng 7
+ルカ|ルカ|Luca (tên người)
+サラ|サラ|Sara (tên người)
+リオ|リオ|Rio (tên người)
+トム|トム|Tom (tên người)
+ジョン|ジョン|John (tên người)
+マイク|マイク|Mike (tên người)
+スマホ|スマホ|Điện thoại thông minh
+じゅうご|じゅうご|15
+じゅうごにち|じゅうごにち|Ngày 15
 `;

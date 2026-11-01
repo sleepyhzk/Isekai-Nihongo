@@ -26,9 +26,9 @@ export function vandap(ctx) {
     const B = DATA.bai[st.b];
     if (st.m === 'pic') {
       const g = new Map();
-      [...B.pic].sort((a, b) => num(a.pic) - num(b.pic) || num(a.id) - num(b.id)).forEach(x => { if (!g.has(x.pic)) g.set(x.pic, []); g.get(x.pic).push(x); });
+      (B.keep ? [...B.pic] : [...B.pic].sort((a, b) => num(a.pic) - num(b.pic) || num(a.id) - num(b.id))).forEach(x => { if (!g.has(x.pic)) g.set(x.pic, []); g.get(x.pic).push(x); });
       groups = [...g].map(([pic, qs]) => ({ pic, qs, label: pic.replace(/^B\d+-/, '') }));
-    } else groups = [...B.free].sort((a, b) => num(a.id) - num(b.id)).map((x, i) => ({ pic: null, qs: [x], label: String(i + 1) }));
+    } else groups = (B.keep ? [...B.free] : [...B.free].sort((a, b) => num(a.id) - num(b.id))).map((x, i) => ({ pic: null, qs: [x], label: String(i + 1) }));
     st.k = Math.min(Math.max(0, st.k), groups.length - 1);
   };
   const gDone = g => g.qs.every(q => (best[q.id] || 0) >= 15);
@@ -41,8 +41,8 @@ export function vandap(ctx) {
     const B = DATA.bai;
     $('#app').innerHTML = `<div style="color:#f59e0b;font-size:12px">問答 · Vấn đáp</div><h1 class="sh-h">Vấn đáp · FE JPD113</h1>
 <div class="shm">${modeBtn('d', '🗣', 'Hội thoại 2 người', '会話 · Nghe rồi nói theo vai A / B')}${modeBtn('p', '📖', 'Đoạn văn 1 người', '文章 · Mỗi bài một đoạn văn')}${modeBtn('r', '📝', 'Luyện đọc', '読み物 · Đoạn ngắn theo bài')}${modeBtn('q', '💬', 'Vấn đáp', '問答 · Nghe câu hỏi, tự trả lời (có tranh / không tranh)', 1)}</div>
-<div class="sht" id="vdb">${Object.keys(B).map(b => `<button data-b="${b}" class="${b == st.b ? 'on' : ''}"><i>${b}</i>Bài ${b}</button>`).join('')}</div>
-<div class="vd-seg" id="vdm"><button data-vm="pic" class="${st.m == 'pic' ? 'on' : ''}">🖼 Có tranh <span id="n-pic"></span></button><button data-vm="free" class="${st.m == 'free' ? 'on' : ''}">💭 Không tranh <span id="n-free"></span></button></div>
+<div class="sht" id="vdb">${Object.keys(B).map(b => `<button data-b="${b}" class="${b == st.b ? 'on' : ''}"><i>${B[b].title ? '★' : b}</i>${esc(B[b].title || 'Bài ' + b)}</button>`).join('')}</div>
+${B[st.b].note ? `<div class="shhint" style="margin:0 0 10px">★ ${esc(B[st.b].note)}</div>` : ''}<div class="vd-seg" id="vdm"><button data-vm="pic" class="${st.m == 'pic' ? 'on' : ''}">🖼 Có tranh <span id="n-pic"></span></button><button data-vm="free" class="${st.m == 'free' ? 'on' : ''}">💭 Không tranh <span id="n-free"></span></button></div>
 <div class="vd-opt" id="vdo"><span>Hiện:</span><button data-o="j">Câu hỏi</button><button data-o="r">Romaji</button><button data-o="v">Nghĩa</button><button data-o="w">Phân tích từ</button></div>
 <div class="sht" id="vdk"></div><div class="vd-card" id="vdc"></div>
 <div class="vd-nav"><button class="sm2" id="vpv">⏮</button><span id="vpos"></span><button class="sm2" id="vnx">⏭</button></div>
@@ -59,7 +59,7 @@ export function vandap(ctx) {
   const save = () => sv('vdp', st);
   const go = d => { const k = st.k + d; if (k < 0 || k >= groups.length) return; stopRec(); stopSay(); st.k = k; save(); pills(); card(); scrollTo(0, 0); };
   function pills() {
-    $('#vdk').innerHTML = groups.map((g, i) => `<button data-k="${i}" class="${i == st.k ? 'on' : ''}"><i>${st.m == 'pic' ? 'tranh' : 'câu'}</i>${esc(g.label)}${gDone(g) ? ' ✓' : ''}</button>`).join('');
+    $('#vdk').innerHTML = groups.map((g, i) => `<button data-k="${i}" class="${i == st.k ? 'on' : ''}"><i>${st.m == 'pic' ? 'tranh' : 'câu'}</i>${i + 1}${gDone(g) ? ' ✓' : ''}</button>`).join('');
     document.querySelectorAll('#vdk [data-k]').forEach(b => b.onclick = () => { stopRec(); stopSay(); st.k = +b.dataset.k; save(); pills(); card(); });
     $('#vpos').textContent = (st.k + 1) + ' / ' + groups.length;
     const on = document.querySelector('#vdk .on'); if (on) on.scrollIntoView({ block: 'nearest', inline: 'center' });

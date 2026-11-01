@@ -34,6 +34,17 @@ function day(n) {
   let s = numJa(n); if (n % 10 === 7) s = s.replace(/なな$/, 'しち'); if (n % 10 === 9) s = s.replace(/きゅう$/, 'く');
   return s + 'にち';
 }
+function sai(n) {
+  if (n === 20) return 'はたち';
+  if (n === 1) return 'いっさい';
+  if (n === 8) return 'はっさい';
+  if (n === 10) return 'じゅっさい';
+  const u = n % 10, t = n - u;
+  if (u === 0) return numJa(n).replace(/じゅう$/, 'じゅっ') + 'さい';
+  if (u === 1) return numJa(t) + 'いっさい';
+  if (u === 8) return numJa(t) + 'はっさい';
+  return numJa(n) + 'さい';
+}
 const k2h = s => s.replace(/[\u30a1-\u30f6]/g, c => String.fromCharCode(c.charCodeAt(0) - 96));
 export const nm = s => k2h(String(s).normalize('NFKC').toLowerCase()).replace(/[\s、。！？!?,.「」『』〜~・()（）…:：;；"'“”]/g, '');
 
@@ -52,13 +63,14 @@ function kan2n(s) {
 // Chuyển câu (có thể lẫn kanji / số Ả Rập) về cách đọc hiragana đã chuẩn hoá.
 export function rd(raw) {
   let s = String(raw || '').normalize('NFKC');
-  s = s.replace(/([〇一二三四五六七八九十百千万]+)(?=時|分|月|日|階|円|ドル|ドン)/g, m => String(kan2n(m)));
-  s = s.replace(/(\d+)\s*(時|分|月|日|階|円|ドル|ドン)?/g, (m, d, u) => {
+  s = s.replace(/([〇一二三四五六七八九十百千万]+)(?=時|分|月|日|階|円|ドル|ドン|歳|才)/g, m => String(kan2n(m)));
+  s = s.replace(/(\d+)\s*(時|分|月|日|階|円|ドル|ドン|歳|才)?/g, (m, d, u) => {
     const n = +d;
     if (u === '時') return (HOUR[n] ?? numJa(n)) + 'じ';
     if (u === '分') return minute(n);
     if (u === '月') return (MON[n] ?? numJa(n)) + 'がつ';
     if (u === '日') return day(n);
+    if (u === '歳' || u === '才') return sai(n);
     if (u === '階') return KAI[n] ?? numJa(n) + 'かい';
     return numJa(n) + (u || '');
   });
@@ -94,11 +106,14 @@ export function judgeOne(x, raw) {
     const want = j.truth === 'yes';
     if (yes !== want) return out(byCode('R2') || lad[lad.length - 1], { how: 'ngược với tranh' });
     const needOk = (j.need || []).every(g => g.some(w => t.includes(nm(w))));
-    if (!needOk) return out(byCode('R2b') || byCode('R4') || lad[0], { how: 'đúng はい/いいえ nhưng thiếu ý' });
+    if (!needOk) return out(byCode('R6b') || byCode('R2b') || byCode('R4') || lad[0], { how: 'đúng はい/いいえ nhưng thiếu ý' });
     return ENDS.test(t) ? out(lad.find(e => e.s === 15) || lad[0], { how: 'đủ ý' }) : out(byCode('R4') || lad[0], { how: 'câu cụt' });
   }
   // 3) câu hỏi mở: kiểm từ khoá bắt buộc
-  const needOk = (j.need || []).every(g => g.some(w => t.includes(nm(w))));
+  const hit = (j.need || []).map(g => { let p = -1; for (const w of g) { const i = t.indexOf(nm(w)); if (i >= 0 && (p < 0 || i < p)) p = i; } return p; });
+  const got = hit.filter(p => p >= 0).length, needOk = got === hit.length;
+  if (needOk && j.order && hit.some((p, k) => k && p < hit[k - 1])) return out(byCode('R2') || lad[lad.length - 1], { how: 'sai thứ tự các ý' });
+  if (!needOk && got > 0 && byCode('R6b')) return out(byCode('R6b'), { how: 'thiếu hoặc sai một ý' });
   if (needOk) return ENDS.test(t) ? out(lad.find(e => e.s === 15) || lad[0], { how: 'đủ ý' }) : out(byCode('R4') || lad[0], { how: 'câu cụt' });
   return out(byCode('R2') || byCode('R1') || lad[lad.length - 1], { how: 'chưa đúng ý' });
 }
