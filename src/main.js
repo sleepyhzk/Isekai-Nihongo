@@ -47,7 +47,7 @@ function pick(){if(!HASTTS)return;const v=speechSynthesis.getVoices().filter(x=>
 if(HASTTS){pick();speechSynthesis.onvoiceschanged=pick}
 let sayGen=0;
 const stopSay=()=>{sayGen++;if(au){au.onended=au.onerror=null;try{au.pause()}catch(e){}au=null}if(HASTTS&&(speechSynthesis.speaking||speechSynthesis.pending))speechSynthesis.cancel()};
-const MALEV=["rito","keita"],okV=k=>k=="nanami"||!!CN[k];
+const MALEV=["keita"],okV=k=>k=="nanami"||!!CN[k];
 const AC=new Map();
 function getAu(f){let a=AC.get(f);if(a&&a.error){AC.delete(f);a=null}if(!a){a=new Audio();a.preload="auto";a.src=BASE+"audio/"+f;AC.set(f,a);if(AC.size>80){const k=AC.keys().next().value,o=AC.get(k);AC.delete(k);if(o&&o!==au){o.removeAttribute("src");o.load()}}}return a}
 /* Giọng vai B được chốt MỘT LẦN cho cả bài (không đổi theo từng câu) */
@@ -233,7 +233,8 @@ try{const z=JSON.parse(localStorage.getItem("shp")||"{}");if(z.m==="p"||z.m==="d
 if(![.5,.75,1].includes(SHO.sp))SHO.sp=1;
 hs.forEach(j=>{if(!SHV[j]){const m=WORD_MEANING(j);if(m)SHV[j]=m}});
 let CM={};try{CM=JSON.parse(localStorage.getItem("cmx")||"{}")}catch(e){}Object.keys(CM).forEach(k=>{if(hs.has(k))SHV[k]=CM[k]});
-function vandapOpen(){leave();stopSay();backFn=home;$("#back").hidden=false;import("./vandap.js").then(M=>M.vandap({$,say,stopSay,toast,BASE,warm,shadow,setExit:f=>{shExit=f}})).catch(e=>{console.error(e);toast("Không mở được mục Vấn đáp")})}
+function vandapOpen(){leave();stopSay();backFn=home;$("#back").hidden=false;$("#app").innerHTML='<div style="color:#f59e0b;font-size:12px">問答 · Vấn đáp</div><h1 class="sh-h">Đang tải…</h1>';import("./vandap.js").then(M=>M.vandap({$,say,stopSay,toast,BASE,warm,shadow,hs,SHV,persist,setExit:f=>{shExit=f}})).catch(e=>{console.error(e);toast("Không mở được mục Vấn đáp")})}
+setTimeout(()=>{import("./vandap.js").catch(()=>{})},2500);
 function shadow(m,i){
 if(m=="q"){vandapOpen();return}
 leave();stopSay();backFn=home;$("#back").hidden=false;
@@ -632,7 +633,7 @@ let hp=!!(history.state&&history.state.a);
 new MutationObserver(()=>{const vis=!$("#back").hidden;if(vis&&!hp){hp=true;history.pushState({a:1},"")}}).observe($("#back"),{attributes:true,attributeFilter:["hidden"]});
 addEventListener("popstate",e=>{if(e.state&&e.state.a){hp=true;return}if(!hp)return;hp=false;closePops();if($("#back").hidden){history.back();return}backFn();if(!$("#back").hidden){hp=true;history.pushState({a:1},"")}});
 
-const CN={zunko:"東北ずん子",tsurugi:"中部つるぎ",metan:"四国めたん",rito:"離途",keita:"Keita (nam)"},cr=()=>{};
+const CN={zunko:"東北ずん子",tsurugi:"中部つるぎ",metan:"四国めたん",keita:"Keita (nam)"},cr=()=>{};
 if(!CN[VC]&&VC!="nanami")VC="nanami";
 const sel=$("#vc");sel.value=VC;cr();sel.onchange=()=>{VC=sel.value;BV=null;FBW.clear();ensure(VC);try{localStorage.setItem("vc",VC)}catch(e){}cr();say("こんにちは")};
 save();home();

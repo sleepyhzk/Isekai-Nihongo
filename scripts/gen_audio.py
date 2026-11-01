@@ -1,8 +1,8 @@
 """Tạo file âm thanh cho mọi câu/từ trong app, theo từng giọng.
   - nanami : giọng thần kinh Microsoft (cần Internet):  pip install edge-tts
-  - zunko, tsurugi, metan, rito : giọng VOICEVOX (miễn phí). Cần cài app VOICEVOX
+  - zunko, tsurugi, metan : giọng VOICEVOX (miễn phí). Cần cài app VOICEVOX
     (https://voicevox.hiroshiba.jp), MỞ app lên rồi mới chạy lệnh. Nên cài thêm ffmpeg để file nhẹ (mp3).
-Vai B trong Hội thoại tự chọn giọng nam nếu có (rito, keita); nên tạo ít nhất nanami + rito.
+Vai B trong Hội thoại tự chọn giọng nam nếu có (keita); nếu chưa có thì dùng giọng đã tạo khác.
 Chạy:  npm run audio        Chỉ vài giọng:  VOICES=nanami,zunko npm run audio
 (Windows PowerShell: $env:VOICES="nanami,zunko"; npm run audio)"""
 import asyncio, hashlib, json, os, shutil, subprocess, sys, urllib.parse, urllib.request
@@ -15,7 +15,6 @@ PROFILES = {
     "zunko":    ("vv", "東北ずん子"),
     "tsurugi":  ("vv", "中部つるぎ"),
     "metan":    ("vv", "四国めたん"),
-    "rito":     ("vv", "離途"),
     "keita":    ("edge", "ja-JP-KeitaNeural", "-5%", "+0Hz"),   # giọng nam Microsoft, mặc định KHÔNG tạo (thêm vào VOICES nếu muốn)
 }
 OPTIONAL = {"keita"}

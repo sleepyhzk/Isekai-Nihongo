@@ -774,4 +774,29 @@ export const EXTRA_TEXT = `
 てんいん|てんいん|Nhân viên cửa hàng
 温度|おんど|Nhiệt độ
 報告します|ほうこくします|Báo cáo
+おくに|おくに|Đất nước (của bạn, lịch sự)
+はつか|はつか|Ngày 20
+かようび|かようび|Thứ ba
+なんにち|なんにち|Ngày mấy
+なんぷん|なんぷん|Mấy phút
+さんじゅういち|さんじゅういち|31
+じゅういち|じゅういち|11
+ひゃくえん|ひゃくえん|100 yên
+ショップ|ショップ|Cửa hàng
+スープ|スープ|Súp
+ゴールデンウイーク|ゴールデンウイーク|Tuần lễ vàng (kỳ nghỉ đầu tháng 5 ở Nhật)
+ソフィア|ソフィア|Sofia (tên người)
+ケビン|ケビン|Kevin (tên người)
+エマ|エマ|Emma (tên người)
+ジュリア|ジュリア|Julia (tên người)
+ロベルト|ロベルト|Roberto (tên người)
+ティナ|ティナ|Tina (tên người)
+ヤン|ヤン|Yan (tên người)
+リン|リン|Linh (tên người)
+FPT|エフピーティー|FPT (tên trường/tập đoàn)
+pork|ポーク|Thịt lợn (tiếng Anh)
+にち|にち|Ngày
+なんがい|なんがい|Tầng mấy
+A|エー|A (ký hiệu người A)
+しちがつ|しちがつ|Tháng 7
 `;

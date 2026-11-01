@@ -18,7 +18,7 @@ export function vandap(ctx) {
   const { $, say, stopSay, toast, BASE } = ctx;
   const st = ld('vdp', { b: '1', m: 'pic', k: 0 });
   const best = ld('vds', {});
-  const O = ld('vdo', { j: 1, r: 0, v: 0 });
+  const O = ld('vdo', { j: 1, r: 0, v: 0, w: 1 });
   if (!DATA.bai[st.b]) st.b = '1';
   let rec = null, groups = [];
 
@@ -43,7 +43,7 @@ export function vandap(ctx) {
 <div class="shm">${modeBtn('d', '🗣', 'Hội thoại 2 người', '会話 · Nghe rồi nói theo vai A / B')}${modeBtn('p', '📖', 'Đoạn văn 1 người', '文章 · Mỗi bài một đoạn văn')}${modeBtn('r', '📝', 'Luyện đọc', '読み物 · Đoạn ngắn theo bài')}${modeBtn('q', '💬', 'Vấn đáp', '問答 · Nghe câu hỏi, tự trả lời (có tranh / không tranh)', 1)}</div>
 <div class="sht" id="vdb">${Object.keys(B).map(b => `<button data-b="${b}" class="${b == st.b ? 'on' : ''}"><i>${b}</i>Bài ${b}</button>`).join('')}</div>
 <div class="vd-seg" id="vdm"><button data-vm="pic" class="${st.m == 'pic' ? 'on' : ''}">🖼 Có tranh <span id="n-pic"></span></button><button data-vm="free" class="${st.m == 'free' ? 'on' : ''}">💭 Không tranh <span id="n-free"></span></button></div>
-<div class="vd-opt" id="vdo"><span>Hiện:</span><button data-o="j">Câu hỏi</button><button data-o="r">Romaji</button><button data-o="v">Nghĩa</button></div>
+<div class="vd-opt" id="vdo"><span>Hiện:</span><button data-o="j">Câu hỏi</button><button data-o="r">Romaji</button><button data-o="v">Nghĩa</button><button data-o="w">Phân tích từ</button></div>
 <div class="sht" id="vdk"></div><div class="vd-card" id="vdc"></div>
 <div class="vd-nav"><button class="sm2" id="vpv">⏮</button><span id="vpos"></span><button class="sm2" id="vnx">⏭</button></div>
 <div class="shhint">Bấm 🎤 để nói (Chrome/Edge, cho phép micro) hoặc gõ câu trả lời vào ô bên dưới. Điểm theo thang FE113: tối đa 15.</div>`;
@@ -78,7 +78,7 @@ export function vandap(ctx) {
       : `<div class="vd-h"><h5>✅ Đáp án mẫu</h5>${A(x.tra_loi_1, x.nghia_1)}${A(x.tra_loi_2, x.nghia_2)}<p class="vd-note">Câu hỏi mở: thay ○○ bằng thông tin của chính bạn.</p></div>`;
     return `<div class="vd-q" data-id="${esc(x.id)}">
 <div class="vd-qh"><span class="vd-ty">${esc(ty)}</span><span class="vd-bs" data-bs="${esc(x.id)}">${best[x.id] != null ? 'Cao nhất: ' + best[x.id] + '/15' : ''}</span></div>
-<div class="vd-qj${O.j ? '' : ' hid'}" data-a="peek"><span class="vd-jt">${qj}</span><span class="vd-hide">🎧 Nghe câu hỏi rồi trả lời… <u>bấm để xem câu hỏi</u></span></div>${O.r ? `<div class="vd-qr">${esc(rom(pic ? x.disp.replace(/[【】]/g, '') : x.cau_hoi_doc))}</div>` : ''}${O.v ? `<div class="vd-qv">${esc(vn)}</div>` : ''}
+<div class="vd-qj${O.j ? '' : ' hid'}" data-a="peek"><span class="vd-jt">${qj}</span><span class="vd-hide">🎧 Nghe câu hỏi rồi trả lời… <u>bấm để xem câu hỏi</u></span></div>${O.r ? `<div class="vd-qr">${esc(rom(pic ? x.disp.replace(/[【】]/g, '') : x.cau_hoi_doc))}</div>` : ''}${O.v ? `<div class="vd-qv">${esc(vn)}</div>` : ''}${O.w ? wordsHTML(x) : ''}
 <div class="vd-act"><button data-a="hear">🔊 Nghe câu hỏi</button><button data-a="slow">🐢 Nghe chậm</button><button data-a="mic" class="vd-mic"${SR ? '' : ' disabled title="Trình duyệt này chưa hỗ trợ nhận giọng nói — hãy gõ câu trả lời"'}>🎤 Trả lời</button><button data-a="tog" data-for="h">💡 Gợi ý</button><button data-a="tog" data-for="ans">✅ Đáp án</button></div>
 <div class="vd-type"><input type="text" lang="ja" autocomplete="off" placeholder="…hoặc gõ câu trả lời (hiragana / kanji)"><button data-a="chk">Chấm</button></div>
 <div class="vd-res" aria-live="polite"></div>
@@ -105,11 +105,24 @@ export function vandap(ctx) {
     if (g.qs[0]) { const t = g.qs[0].read || g.qs[0].cau_hoi_doc; if (t) ctx.warm && ctx.warm(t); }
   }
 
+  // Danh sách từ của câu hỏi (bỏ trùng, bỏ dấu câu) — dùng chung cho hiển thị và xử lý bấm.
+  const qSeg = x => st.m === 'pic' ? x.disp.replace(/[【】]/g, '') : x.cau_hoi_doc;
+  const wordList = x => { const seen = new Set(), wl = []; try { segment(qSeg(x)).forEach(c => { if (c.sp || PU.test(c.s) || seen.has(c.s)) return; seen.add(c.s); wl.push(c); }); } catch (e) { } return wl; };
+  const wordsHTML = x => {
+    const wl = wordList(x); if (!wl.length) return '';
+    return `<div class="vd-wd"><div class="wd-h">Phân tích từ <span>${wl.length} từ · bấm chữ để nghe, bấm ★ để học</span></div><div class="wd-l">${wl.map((c, k) => `<div class="wd-c${c.m ? '' : ' wd-nm'}${ctx.hs.has(c.s) ? ' wd-st' : ''}"><button class="wd-s" data-a="wstar" data-w="${k}" title="Thêm vào Ghi nhớ">★</button><button class="wd-j" data-a="wsay" data-w="${k}">${esc(c.s)}</button><div class="wd-r">${c.h && c.h != c.s ? esc(c.h) + ' · ' : ''}${esc(c.ro || '')}</div><div class="wd-m">${esc(c.m || 'Chưa có nghĩa')}</div>${c.g && !c.fn ? `<div class="wd-g">${esc(c.g)}</div>` : ''}</div>`).join('')}</div></div>`;
+  };
   const qText = x => st.m === 'pic' ? x.read : x.cau_hoi_doc;
   function act(q, x, b) {
     const a = b.dataset.a;
     if (a === 'say') { stopRec(); say(b.dataset.t, 1); return; }
     if (a === 'hear' || a === 'slow') { stopRec(); say(qText(x), a === 'slow' ? .75 : 1); return; }
+    if (a === 'wsay') { stopRec(); say(wordList(x)[+b.dataset.w].s, 1); return; }
+    if (a === 'wstar') {
+      const c = wordList(x)[+b.dataset.w], { hs, SHV, persist } = ctx, card = b.closest('.wd-c');
+      if (hs.has(c.s)) { hs.delete(c.s); toast('Đã bỏ khỏi Ghi nhớ'); } else { hs.add(c.s); if (c.m) SHV[c.s] = c.m + (c.g && !c.fn ? ' (' + c.g + ')' : ''); toast('Đã thêm “' + c.s + '” vào Ghi nhớ'); }
+      persist(); card.classList.toggle('wd-st', hs.has(c.s)); return;
+    }
     if (a === 'peek') { b.classList.toggle('peek'); return; }
     if (a === 'tog') { const el = q.querySelector(`[data-p="${b.dataset.for}"]`); el.hidden = !el.hidden; b.classList.toggle('on', !el.hidden); return; }
     if (a === 'chk') { const v = q.querySelector('input').value.trim(); if (!v) { toast('Hãy gõ câu trả lời trước'); return; } check(q, x, [v]); return; }

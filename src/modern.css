@@ -728,3 +728,5 @@ main:has(.apt-w){max-width:1280px}
 .vd-qj.hid:not(.peek) .vd-jt{display:none}
 .vd-qj.hid:not(.peek) .vd-hide{display:inline}
 .vd-qj.hid:not(.peek)~.vd-qr,.vd-qj.hid:not(.peek)~.vd-qv{display:none}
+.vd-wd{margin-top:14px}
+.vd-qj.hid:not(.peek)~.vd-wd{display:none}
