@@ -114,17 +114,28 @@ const kjAlts=c=>{const d=KD[c];if(!d)return[];const o=new Set;[d[0],d[1]].forEac
 const kjShow=c=>{const d=KD[c]||[],f=t=>(t||"").split(/[,、]/).map(x=>x.trim()).filter(x=>x&&x!="–").join("・");return[f(d[0]),f(d[1])].filter(Boolean).join(" / ")};
 const nk=t=>K2H(t).replace(/[^\u3041-\u3096ー]/g,"").replace(/は/g,"わ").replace(/へ/g,"え").replace(/を/g,"お");
 const kanaOf=j=>{const a=AN[j];if(a&&a.t&&a.t.length)return a.t.map(t=>t.h||t.s).join("");return /[\u4e00-\u9fff]/.test(j)?"":K2H(j.replace(/[^\u3041-\u30ff]/g,""))};
-function memqs(list){const AW=WC.flat().flatMap(l=>l[1]);
-return list.flatMap(it=>{const base={big:it.jp,ex:`<b>${it.jp}</b>${it.rd?`<br>${it.rd}`:""}<br>${it.vi}`,mem:{t:it.t,k:it.k},say:it.say};
+function memqs(list,all){const AW=WC.flat().flatMap(l=>l[1]);all=all||list;
+const WK=t=>t=="v"||t=="h"?"w":t,len=x=>[...String(x||"")].length,kanaOnly=t=>/^[\u3040-\u30ff\u30fc\s]+$/.test(t||"");
+/* Đáp án gây nhiễu: ưu tiên chính các mục đã ★ cùng loại (cùng là từ hoặc cùng là câu), chọn cái gần về độ dài;
+   chỉ khi thiếu mới bổ sung từ kho chung cùng loại để vẫn đủ 4 đáp án. */
+const cands=(it,key,sent)=>{const used=new Set([it[key]]),out=[];
+const add=x=>{if(out.length<3&&x[key]&&!used.has(x[key])&&x.jp!=it.jp&&x.vi!=it.vi){used.add(x[key]);out.push(x)}};
+const near=a=>shuf(a).sort((p,q)=>Math.abs(len(p[key])-len(it[key]))-Math.abs(len(q[key])-len(it[key]))).slice(0,8);
+shuf(near(all.filter(x=>x!==it&&WK(x.t)==WK(it.t)&&x.vi).map(x=>({jp:x.jp,rd:x.rd||"",vi:x.vi})))).forEach(add);
+if(out.length<3){const pool=sent?S.map(x=>({jp:x.j,rd:"",vi:x.v})):AW.map(w=>({jp:w[0],rd:w[1],vi:w[2]})).filter(x=>kanaOnly(x.jp)==kanaOnly(it.jp));shuf(near(pool)).forEach(add)}
+return out};
+return list.flatMap(it=>{
 if(it.t=="k")return kqs([it.k]);if(it.t=="g")return gqs([it.k]);
 if(!it.vi)return[];
-if(it.t=="v"){const ty=it.rd&&it.rd!=it.jp?Math.floor(Math.random()*3):[0,2][Math.floor(Math.random()*2)];
-if(ty==0){const ds=pickN(AW,3,(x,o)=>x[2]!=it.vi&&!o.some(y=>y[2]==x[2])),r=place(it.vi,ds.map(x=>x[2])),why={};ds.forEach(x=>why[x[2]]=`«${x[2]}» là nghĩa của từ <b>${x[0]}</b> (${x[1]}), một từ khác. Còn <b>${it.jp}</b> (${it.rd}) có nghĩa là «${it.vi}».`);return[{...base,ask:"Từ này có nghĩa là gì?",prompt:it.jp,hear:it.rd,why,opts:r.opts,a:r.a}]}
-if(ty==1){const ds=pickN(AW,3,(x,o)=>x[1]!=it.rd&&!o.some(y=>y[1]==x[1])),r=place(it.rd,ds.map(x=>x[1])),why={};ds.forEach(x=>why[x[1]]=`${x[1]} là cách đọc của từ <b>${x[0]}</b> (${x[2]}), không phải của <b>${it.jp}</b>. <b>${it.jp}</b> đọc là <b>${it.rd}</b> (${it.vi}).`);return[{...base,ask:"Từ này đọc như thế nào?",prompt:it.jp,why,opts:r.opts,a:r.a}]}
-const ds=pickN(AW,3,(x,o)=>x[0]!=it.jp&&!o.some(y=>y[0]==x[0])),r=place(it.jp,ds.map(x=>x[0])),why={};ds.forEach(x=>why[x[0]]=`<b>${x[0]}</b> (${x[1]}) nghĩa là «${x[2]}», không phải «${it.vi}». Từ có nghĩa «${it.vi}» là <b>${it.jp}</b> (${it.rd}).`);return[{...base,ask:"Chọn từ tiếng Nhật đúng với nghĩa này:",prompt:it.vi,sm:1,why,opts:r.opts,a:r.a}]}
-const P=it.t=="s"?S.map(x=>[x.j,x.v]):Object.entries(SHV).filter(e=>e[1]);
-if(Math.random()<.5){const ds=pickN(P,3,(x,o)=>x[1]!=it.vi&&!o.some(y=>y[1]==x[1])),r=place(it.vi,ds.map(x=>x[1])),why={};ds.forEach(x=>why[x[1]]=`«${x[1]}» là nghĩa của câu <b>${x[0]}</b>, không phải của câu này. Câu <b>${it.jp}</b> nghĩa là «${it.vi}».`);return[{...base,ask:"Câu này có nghĩa là gì?",prompt:it.jp,hear:it.jp,sm:1,col:1,why,opts:r.opts,a:r.a}]}
-const ds=pickN(P,3,(x,o)=>x[0]!=it.jp&&!o.some(y=>y[0]==x[0])),r=place(it.jp,ds.map(x=>x[0])),why={};ds.forEach(x=>why[x[0]]=`Câu «${x[0]}» có nghĩa là «${x[1]}», không khớp với «${it.vi}». Câu có nghĩa «${it.vi}» là <b>${it.jp}</b>.`);return[{...base,ask:"Chọn câu tiếng Nhật đúng với nghĩa này:",prompt:it.vi,sm:1,col:1,why,opts:r.opts,a:r.a}]})}
+const sent=it.t=="s",base={big:it.jp,ex:`<b>${it.jp}</b>${it.rd?`<br>${it.rd}`:""}<br>${it.vi}`,mem:{t:it.t,k:it.k},say:it.say},rdOk=it.t=="v"&&it.rd&&it.rd!=it.jp;
+const nm=x=>`<b>${x.jp}</b>${x.rd&&x.rd!=x.jp?` (${x.rd})`:""}`,me=nm(it);
+const types=sent?[0,2]:rdOk?[0,1,2]:[0,2];let ty=types[Math.floor(Math.random()*types.length)];
+const build=(ask,prompt,right,key,whyOf,ex)=>{const ds=cands(it,key,sent);if(!ds.length)return null;const r=place(right,ds.map(x=>x[key])),why={};ds.forEach(x=>why[x[key]]=whyOf(x));return{...base,ask,prompt,why,opts:r.opts,a:r.a,...ex}};
+let q=null;
+if(ty==1)q=build("Từ này đọc như thế nào?",it.jp,it.rd,"rd",x=>`${x.rd} là cách đọc của ${nm(x)} (${x.vi}), không phải của ${me}. ${me} đọc là <b>${it.rd}</b> (${it.vi}).`);
+if(ty==2||(ty==1&&!q))q=build(sent?"Chọn câu tiếng Nhật đúng với nghĩa này:":"Chọn từ tiếng Nhật đúng với nghĩa này:",it.vi,it.jp,"jp",x=>`${nm(x)} nghĩa là «${x.vi}», không phải «${it.vi}». ${sent?"Câu":"Từ"} có nghĩa «${it.vi}» là ${me}.`,{sm:1,col:sent?1:0});
+if(!q)q=build(sent?"Câu này có nghĩa là gì?":"Từ này có nghĩa là gì?",it.jp,it.vi,"vi",x=>`«${x.vi}» là nghĩa của ${nm(x)}, một mục khác. Còn ${me} có nghĩa là «${it.vi}».`,{hear:it.say||it.jp,sm:sent?1:0,col:sent?1:0});
+return q?[q]:[]})}
 function memo(tab){if(tab!=null)MT=tab;if(MT>0)return review(MT-1);leave();backFn=home;$("#back").hidden=false;const all=items(),nv=all.length,nq=all.length;
 $("#app").innerHTML=`${memHero()}${memTabs(0)}
 <div class="acts"><div class="act a1" id="qk"><span class="ai">🔄</span><div><b>Học nhanh</b><small>Ôn nhanh cả ${all.length} mục</small></div></div><div class="act a2" id="ty"><span class="ai">⌨</span><div><b>Luyện gõ</b><small>Gõ ${nv} mục: từ, câu, Hán tự, ngữ pháp</small></div></div><div class="act a3" id="qz"><span class="ai">🧠</span><div><b>Trắc nghiệm</b><small>Trắc nghiệm ${nq} mục đã ★ (15 câu mỗi lượt)</small></div></div></div>
@@ -136,7 +147,7 @@ else if(x.t=="k"){const al=kjAlts(x.k);if(al.length)ws.push({jp:x.k,rd:kjShow(x.
 else if(x.t=="g"){const [gi,gk]=x.k.split("-").map(Number),p=GR[gi]&&GR[gi][1][gk],ex=p&&p[3]&&p[3][0],rd=ex?kanaOf(ex[0]):"";if(rd)ws.push({jp:ex[0],rd,vi:ex[1],say:ex[0],loose:1,lab:"ví dụ của mẫu "+p[0],card:`${ex[1]}<div class="m" style="font-size:14px;margin-top:8px">${p[0]} · ${p[1]}</div>`});else skip++}});
 if(!ws.length)return toast(nv?"Chưa có dữ liệu cách đọc của câu. Hãy chạy npm run analyze rồi mở lại trang":"Chưa có mục nào được ghi nhớ");
 drill(ws,{title:"Chữ hay quên",back:memo,backLabel:"Về Ghi nhớ"});if(skip)toast("Bỏ qua "+skip+" mục chưa có cách đọc")};
-$("#qz").onclick=()=>{if(!all.length)return toast("Chưa có mục nào được ghi nhớ");const run=()=>{const qs=memqs(shuf(all).slice(0,15));if(!qs.length)return toast("Chưa tạo được câu hỏi từ các mục đã ghi nhớ");mcq(qs,{back:memo,backLabel:"Về Ghi nhớ",again:run})};run()};
+$("#qz").onclick=()=>{if(!all.length)return toast("Chưa có mục nào được ghi nhớ");const run=()=>{const qs=memqs(shuf(all).slice(0,15),all);if(!qs.length)return toast("Chưa tạo được câu hỏi từ các mục đã ghi nhớ");mcq(qs,{back:memo,backLabel:"Về Ghi nhớ",again:run})};run()};
 let mq="";const draw=()=>{const f=all.filter(x=>!mq||n2(x.jp+x.rd+x.vi).includes(n2(mq)));
 if(!all.length){$("#ml").innerHTML=`<p class="sub" style="text-align:center;margin-top:36px">Chưa có gì ở đây. Bấm ★ ở Từ vựng, Hán tự hoặc Giao tiếp để thêm vào Ghi nhớ.</p>`;return}
 $("#ml").innerHTML=["v","s","k","g","h"].map(t=>{const g=f.filter(x=>x.t==t);if(!g.length)return"";const [nm,jk,co]=TY[t];
