@@ -71,14 +71,14 @@ ${B[st.b].note ? `<div class="shhint" style="margin:0 0 10px">★ ${esc(B[st.b].
     const qj = pic ? esc(x.disp).replace(/【(.*?)】/g, '<mark>$1</mark>') : esc(x.cau_hoi_doc);
     const ty = pic ? x.type : x.ten_chu_de;
     const vn = pic ? x.vn : x.nghia_vn;
-    const A = (t, n) => `<div class="vd-a">${t && !hasBlank(t) ? `<button class="ib" data-a="say" data-t="${esc(t)}" title="Nghe">🔊</button>` : '<span class="ib"></span>'}<div><b>${esc(t)}</b><small>${esc(n)}</small></div></div>`;
+    const A = (t, n) => `<div class="vd-a">${t && !hasBlank(t) ? `<button class="ib" data-a="say" data-t="${esc(t)}" title="Nghe">🔊</button>` : '<span class="ib"></span>'}<div><b>${esc(t)}</b><small>${esc(n)}</small></div></div>${t ? wordsHTML(t, 'Phân tích từ đáp án') : ''}`;
     const hint = pic ? `<div class="vd-h"><h5>🎧 Nghe hiểu câu hỏi</h5><p>${br(x.ear)}</p></div>`
       : `<div class="vd-h"><h5>🧩 Mẫu câu</h5><p>${esc(x.cau_truc)}</p><h5>📚 Từ vựng</h5><p>${br(String(x.tu_vung).replace(/；/g, '\n'))}</p><h5>✔ Tự soát</h5><p>${esc(x.tu_soat_thong_tin)}</p></div>`;
     const ans = pic ? `<div class="vd-h"><h5>📝 Các bước làm</h5><p>${br(x.steps)}</p><h5>🧩 Mẫu câu</h5><p>${esc(x.pat)}</p><h5>✅ Đáp án mẫu</h5>${A(x.a1, x.n1)}${A(x.a2, x.n2)}<h5>⚠ Bẫy hay gặp</h5><p>${br(x.trap)}</p><h5>🔤 Phát âm</h5><p>${br(x.pron)}</p></div>`
       : `<div class="vd-h"><h5>✅ Đáp án mẫu</h5>${A(x.tra_loi_1, x.nghia_1)}${A(x.tra_loi_2, x.nghia_2)}<p class="vd-note">Câu hỏi mở: thay ○○ bằng thông tin của chính bạn.</p></div>`;
     return `<div class="vd-q" data-id="${esc(x.id)}">
 <div class="vd-qh"><span class="vd-ty">${esc(ty)}</span><span class="vd-bs" data-bs="${esc(x.id)}">${best[x.id] != null ? 'Cao nhất: ' + best[x.id] + '/15' : ''}</span></div>
-<div class="vd-qj${O.j ? '' : ' hid'}" data-a="peek"><span class="vd-jt">${qj}</span><span class="vd-hide">🎧 Nghe câu hỏi rồi trả lời… <u>bấm để xem câu hỏi</u></span></div>${O.r ? `<div class="vd-qr">${esc(rom(pic ? x.disp.replace(/[【】]/g, '') : x.cau_hoi_doc))}</div>` : ''}${O.v ? `<div class="vd-qv">${esc(vn)}</div>` : ''}${O.w ? wordsHTML(x) : ''}
+<div class="vd-qj${O.j ? '' : ' hid'}" data-a="peek"><span class="vd-jt">${qj}</span><span class="vd-hide">🎧 Nghe câu hỏi rồi trả lời… <u>bấm để xem câu hỏi</u></span></div>${O.r ? `<div class="vd-qr">${esc(rom(pic ? x.disp.replace(/[【】]/g, '') : x.cau_hoi_doc))}</div>` : ''}${O.v ? `<div class="vd-qv">${esc(vn)}</div>` : ''}${O.w ? wordsHTML(qSeg(x)) : ''}
 <div class="vd-act"><button data-a="hear">🔊 Nghe câu hỏi</button><button data-a="slow">🐢 Nghe chậm</button><button data-a="mic" class="vd-mic"${SR ? '' : ' disabled title="Trình duyệt này chưa hỗ trợ nhận giọng nói — hãy gõ câu trả lời"'}>🎤 Trả lời</button><button data-a="tog" data-for="h">💡 Gợi ý</button><button data-a="tog" data-for="ans">✅ Đáp án</button></div>
 <div class="vd-type"><input type="text" lang="ja" autocomplete="off" placeholder="…hoặc gõ câu trả lời (hiragana / kanji)"><button data-a="chk">Chấm</button></div>
 <div class="vd-res" aria-live="polite"></div>
@@ -105,21 +105,23 @@ ${B[st.b].note ? `<div class="shhint" style="margin:0 0 10px">★ ${esc(B[st.b].
     if (g.qs[0]) { const t = g.qs[0].read || g.qs[0].cau_hoi_doc; if (t) ctx.warm && ctx.warm(t); }
   }
 
-  // Danh sách từ của câu hỏi (bỏ trùng, bỏ dấu câu) — dùng chung cho hiển thị và xử lý bấm.
+  // Danh sách từ của một đoạn text (bỏ trùng, bỏ dấu câu, bỏ ○○) — dùng chung cho câu hỏi và đáp án.
   const qSeg = x => st.m === 'pic' ? x.disp.replace(/[【】]/g, '') : x.cau_hoi_doc;
-  const wordList = x => { const seen = new Set(), wl = []; try { segment(qSeg(x)).forEach(c => { if (c.sp || PU.test(c.s) || seen.has(c.s)) return; seen.add(c.s); wl.push(c); }); } catch (e) { } return wl; };
-  const wordsHTML = x => {
-    const wl = wordList(x); if (!wl.length) return '';
-    return `<div class="vd-wd"><div class="wd-h">Phân tích từ <span>${wl.length} từ · bấm chữ để nghe, bấm ★ để học</span></div><div class="wd-l">${wl.map((c, k) => `<div class="wd-c${c.m ? '' : ' wd-nm'}${ctx.hs.has(c.s) ? ' wd-st' : ''}"><button class="wd-s" data-a="wstar" data-w="${k}" title="Thêm vào Ghi nhớ">★</button><button class="wd-j" data-a="wsay" data-w="${k}">${esc(c.s)}</button><div class="wd-r">${c.h && c.h != c.s ? esc(c.h) + ' · ' : ''}${esc(c.ro || '')}</div><div class="wd-m">${esc(c.m || 'Chưa có nghĩa')}</div>${c.g && !c.fn ? `<div class="wd-g">${esc(c.g)}</div>` : ''}</div>`).join('')}</div></div>`;
+  const SKIP = /^[、。！？・「」○◯\s]+$/;
+  const wordList = text => { const seen = new Set(), wl = []; try { segment(text).forEach(c => { if (c.sp || SKIP.test(c.s) || seen.has(c.s)) return; seen.add(c.s); wl.push(c); }); } catch (e) { } return wl; };
+  const wordsHTML = (text, title) => {
+    const wl = wordList(text); if (!wl.length) return '';
+    return `<div class="vd-wd" data-t="${esc(text)}"><div class="wd-h">${esc(title || 'Phân tích từ')} <span>${wl.length} từ · bấm chữ để nghe, bấm ★ để học</span></div><div class="wd-l">${wl.map((c, k) => `<div class="wd-c${c.m ? '' : ' wd-nm'}${ctx.hs.has(c.s) ? ' wd-st' : ''}"><button class="wd-s" data-a="wstar" data-w="${k}" title="Thêm vào Ghi nhớ">★</button><button class="wd-j" data-a="wsay" data-w="${k}">${esc(c.s)}</button><div class="wd-r">${c.h && c.h != c.s ? esc(c.h) + ' · ' : ''}${esc(c.ro || '')}</div><div class="wd-m">${esc(c.m || 'Chưa có nghĩa')}</div>${c.g && !c.fn ? `<div class="wd-g">${esc(c.g)}</div>` : ''}</div>`).join('')}</div></div>`;
   };
+  const wordAt = b => wordList(b.closest('.vd-wd').dataset.t)[+b.dataset.w];
   const qText = x => st.m === 'pic' ? x.read : x.cau_hoi_doc;
   function act(q, x, b) {
     const a = b.dataset.a;
     if (a === 'say') { stopRec(); say(b.dataset.t, 1); return; }
     if (a === 'hear' || a === 'slow') { stopRec(); say(qText(x), a === 'slow' ? .75 : 1); return; }
-    if (a === 'wsay') { stopRec(); say(wordList(x)[+b.dataset.w].s, 1); return; }
+    if (a === 'wsay') { stopRec(); say(wordAt(b).s, 1); return; }
     if (a === 'wstar') {
-      const c = wordList(x)[+b.dataset.w], { hs, SHV, persist } = ctx, card = b.closest('.wd-c');
+      const c = wordAt(b), { hs, SHV, persist } = ctx, card = b.closest('.wd-c');
       if (hs.has(c.s)) { hs.delete(c.s); toast('Đã bỏ khỏi Ghi nhớ'); } else { hs.add(c.s); if (c.m) SHV[c.s] = c.m + (c.g && !c.fn ? ' (' + c.g + ')' : ''); toast('Đã thêm “' + c.s + '” vào Ghi nhớ'); }
       persist(); card.classList.toggle('wd-st', hs.has(c.s)); return;
     }
