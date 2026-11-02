@@ -736,3 +736,12 @@ main:has(.apt-w){max-width:1280px}
 .fqo .m{margin:0 4px 0 0;font-size:13px}
 .fqo button{padding:6px 14px;font-size:13px}
 .fc .mr{margin-top:8px;font-size:18px;color:var(--mu)}
+
+/* Phân tích từ trong phần Đáp án mẫu: gọn hơn phần câu hỏi */
+.vd-det .vd-wd{margin:2px 0 14px 46px}
+.vd-det .vd-wd .wd-h{font-size:12.5px;color:var(--mu)}
+.vd-det .vd-wd .wd-l{grid-template-columns:repeat(auto-fill,minmax(124px,1fr));gap:8px}
+.vd-det .vd-wd .wd-c{padding:8px 10px;border-radius:14px}
+.vd-det .vd-wd .wd-j{font-size:19px}
+@media(max-width:860px){.vd-det .vd-wd{margin-left:0}}
+.no-aw .vd-det .vd-wd{display:none}

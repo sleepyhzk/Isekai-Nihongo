@@ -18,7 +18,7 @@ export function vandap(ctx) {
   const { $, say, stopSay, toast, BASE } = ctx;
   const st = ld('vdp', { b: '1', m: 'pic', k: 0 });
   const best = ld('vds', {});
-  const O = ld('vdo', { j: 1, r: 0, v: 0, w: 1 });
+  const O = ld('vdo', { j: 1, r: 0, v: 0, w: 1, a: 1 });
   if (!DATA.bai[st.b]) st.b = '1';
   let rec = null, groups = [];
 
@@ -43,7 +43,7 @@ export function vandap(ctx) {
 <div class="shm">${modeBtn('d', '🗣', 'Hội thoại 2 người', '会話 · Nghe rồi nói theo vai A / B')}${modeBtn('p', '📖', 'Đoạn văn 1 người', '文章 · Mỗi bài một đoạn văn')}${modeBtn('r', '📝', 'Luyện đọc', '読み物 · Đoạn ngắn theo bài')}${modeBtn('q', '💬', 'Vấn đáp', '問答 · Nghe câu hỏi, tự trả lời (có tranh / không tranh)', 1)}</div>
 <div class="sht" id="vdb">${Object.keys(B).map(b => `<button data-b="${b}" class="${b == st.b ? 'on' : ''}"><i>${B[b].title ? '★' : b}</i>${esc(B[b].title || 'Bài ' + b)}</button>`).join('')}</div>
 ${B[st.b].note ? `<div class="shhint" style="margin:0 0 10px">★ ${esc(B[st.b].note)}</div>` : ''}<div class="vd-seg" id="vdm"><button data-vm="pic" class="${st.m == 'pic' ? 'on' : ''}">🖼 Có tranh <span id="n-pic"></span></button><button data-vm="free" class="${st.m == 'free' ? 'on' : ''}">💭 Không tranh <span id="n-free"></span></button></div>
-<div class="vd-opt" id="vdo"><span>Hiện:</span><button data-o="j">Câu hỏi</button><button data-o="r">Romaji</button><button data-o="v">Nghĩa</button><button data-o="w">Phân tích từ</button></div>
+<div class="vd-opt" id="vdo"><span>Hiện:</span><button data-o="j">Câu hỏi</button><button data-o="r">Romaji</button><button data-o="v">Nghĩa</button><button data-o="w">Phân tích từ</button><button data-o="a">Phân tích đáp án</button></div>
 <div class="sht" id="vdk"></div><div class="vd-card" id="vdc"></div>
 <div class="vd-nav"><button class="sm2" id="vpv">⏮</button><span id="vpos"></span><button class="sm2" id="vnx">⏭</button></div>
 <div class="shhint">Bấm 🎤 để nói (Chrome/Edge, cho phép micro) hoặc gõ câu trả lời vào ô bên dưới. Điểm theo thang FE113: tối đa 15.</div>`;
@@ -52,7 +52,7 @@ ${B[st.b].note ? `<div class="shhint" style="margin:0 0 10px">★ ${esc(B[st.b].
     document.querySelectorAll('#app [data-m]').forEach(b => b.onclick = () => { if (b.dataset.m != 'q') ctx.shadow(b.dataset.m); });
     document.querySelectorAll('#vdb [data-b]').forEach(b => b.onclick = () => { stopRec(); stopSay(); st.b = b.dataset.b; st.k = 0; save(); shell(); });
     document.querySelectorAll('#vdm [data-vm]').forEach(b => b.onclick = () => { stopRec(); stopSay(); st.m = b.dataset.vm; st.k = 0; save(); shell(); });
-    document.querySelectorAll('#vdo [data-o]').forEach(b => { b.classList.toggle('on', !!O[b.dataset.o]); b.onclick = () => { O[b.dataset.o] = O[b.dataset.o] ? 0 : 1; sv('vdo', O); b.classList.toggle('on', !!O[b.dataset.o]); stopRec(); card(); }; });
+    document.querySelectorAll('#vdo [data-o]').forEach(b => { b.classList.toggle('on', !!O[b.dataset.o]); b.onclick = () => { O[b.dataset.o] = O[b.dataset.o] ? 0 : 1; sv('vdo', O); b.classList.toggle('on', !!O[b.dataset.o]); if (b.dataset.o == 'a') { $('#vdc').classList.toggle('no-aw', !O.a); return; } stopRec(); card(); }; });
     $('#vpv').onclick = () => go(-1); $('#vnx').onclick = () => go(1);
     buildGroups(); pills(); card();
   }
@@ -90,6 +90,7 @@ ${B[st.b].note ? `<div class="shhint" style="margin:0 0 10px">★ ${esc(B[st.b].
   }
   function card() {
     const g = groups[st.k]; if (!g) { $('#vdc').innerHTML = ''; return; }
+    $('#vdc').classList.toggle('no-aw', !O.a);
     $('#vdc').innerHTML = (g.pic ? imgBox(g.pic) : '') + `<div class="vd-qs">${g.qs.map(qHTML).join('')}</div>`;
     const im = document.querySelector('.vd-pic img');
     if (im) {
