@@ -745,3 +745,26 @@ main:has(.apt-w){max-width:1280px}
 .vd-det .vd-wd .wd-j{font-size:19px}
 @media(max-width:860px){.vd-det .vd-wd{margin-left:0}}
 .no-aw .vd-det .vd-wd{display:none}
+
+/* Thông tin của mình (đáp án tự điền) */
+.vd-me{margin:0 0 12px;background:var(--card2);border:1px solid var(--ln);border-radius:16px;padding:0 14px}
+.vd-me summary{cursor:pointer;padding:12px 0;font-weight:700;font-size:14px;list-style:none}
+.vd-me summary::-webkit-details-marker{display:none}
+.vd-me summary small{font-weight:500;color:var(--mu);font-size:12px;margin-left:4px}
+.vd-mg{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;padding-bottom:12px}
+.vd-mg label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--mu);min-width:0}
+.vd-mg input,.vd-mg select{background:var(--card);border:1px solid var(--ln);border-radius:12px;color:var(--tx);padding:9px 11px;font:inherit;font-size:15px;min-width:0;width:100%;box-sizing:border-box}
+.vd-mg input:focus,.vd-mg select:focus{outline:2px solid var(--ac);outline-offset:0}
+.vd-mh{margin:0 0 12px;font-size:12px;color:#f59e0b}.vd-mh:empty{display:none}
+.vd-me-tag{margin-left:6px;font-weight:500;color:#f5b73b;font-size:12px}
+.vd-me-need b{color:var(--ac)}
+
+/* Âm ghép: thu hẹp khoảng trống quanh kana nhỏ (xem src/kanafix.js) */
+.sk{margin:0 -.15em}
+
+/* Shadowing › Ôn tập */
+.otn{margin:0 0 12px;font-size:13px;color:var(--mu)}
+.otn b{color:var(--tx)}
+#shj .tk.hl{color:#e08a00;border-bottom-color:#e08a00;font-weight:700}
+#shj .tk.dim{opacity:.3}
+.sl .hl,.psn .hl{color:#e08a00;font-weight:700}

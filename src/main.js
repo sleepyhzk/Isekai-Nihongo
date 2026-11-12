@@ -1,5 +1,7 @@
 import './style.css';
 import './modern.css';
+import { startKanaFix } from './kanafix.js';
+import { OT, OTN, kind, loadVd, buildSets } from './ontap.js';
 import { T } from './data.js';
 import { RD } from './reading.js';
 import { segment, WORD_MEANING, wordRomaji, kanaRomaji } from './gloss.js';
@@ -234,7 +236,8 @@ show()}
 const SHD=DL.map((d,i)=>{const m=d[0].match(/^Bài\s*(\d+)\s*[–-]\s*(.*)$/);return{id:"d"+i,n:m?m[1]:String(i+1),title:m?m[2]:d[0],scene:DSCENE[i]||"street",si:i,items:d[1].map(x=>({sp:x[0],j:x[1],v:x[2]}))}});
 const SHP=PS.map((p,i)=>({id:"p"+i,n:String(i+1),title:p[0],scene:DSCENE[i]||p[1]||"street",si:i,items:p[2].map(x=>({sp:"S",j:x[0],v:x[1]}))}));
 const SHR=RD.map((p,i)=>({id:"r"+i,n:p[0],title:p[1],scene:p[2],si:null,items:p[3].map(x=>({sp:"S",j:x[0],v:x[1]}))}));
-const RG=[["Tất cả",()=>1],["L1–L3 (file của bạn)",x=>/^L/.test(x.n)],["Bài 4–10",x=>{const m=/^B(\d+)/.exec(x.n);return m&&m[1]>=4&&m[1]<=10}],["Bài 11–20",x=>{const m=/^B(\d+)/.exec(x.n);return m&&m[1]>=11&&m[1]<=20}],["Bài 21–30",x=>{const m=/^B(\d+)/.exec(x.n);return m&&m[1]>=21&&m[1]<=30}],["Bài 31–40",x=>{const m=/^B(\d+)/.exec(x.n);return m&&m[1]>=31&&m[1]<=40}],["Bài 41–50",x=>{const m=/^B(\d+)/.exec(x.n);return m&&m[1]>=41&&m[1]<=50}]];let rg=0;
+const RG=[["Tất cả",()=>1],["L1–L3 (file của bạn)",x=>/^L/.test(x.n)],["Bài 4–10",x=>{const m=/^B(\d+)/.exec(x.n);return m&&m[1]>=4&&m[1]<=10}],["Bài 11–20",x=>{const m=/^B(\d+)/.exec(x.n);return m&&m[1]>=11&&m[1]<=20}],["Bài 21–30",x=>{const m=/^B(\d+)/.exec(x.n);return m&&m[1]>=21&&m[1]<=30}],["Bài 31–40",x=>{const m=/^B(\d+)/.exec(x.n);return m&&m[1]>=31&&m[1]<=40}],["Bài 41–50",x=>{const m=/^B(\d+)/.exec(x.n);return m&&m[1]>=41&&m[1]<=50}]];let rg=0,ot="hira",VDS=null;try{ot=localStorage.getItem("otk")||"hira"}catch(e){}
+const OTL=()=>buildSets(SHR,VDS,ot);
 const SHV={};[...SHD,...SHP,...SHR].forEach(s=>s.items.forEach(x=>{SHV[x.j]=x.v}));
 S.forEach(x=>{if(!SHV[x.j])SHV[x.j]=x.v});GR.forEach(l=>l[1].forEach(p=>p[3].forEach(e=>{if(!SHV[e[0]])SHV[e[0]]=e[1]})));WC.flat().forEach(l=>l[1].forEach(w=>{if(w[3]&&!SHV[w[3]])SHV[w[3]]=w[4]||""}));
 let shd=new Set,SHO={j:1,r:1,v:1,w:1,sp:1,loop:0,role:0,cont:0,pv:0},shm="d",shi={d:0,p:0,r:0},shExit=null;
@@ -250,7 +253,8 @@ function shadow(m,i){
 if(m=="q"){vandapOpen();return}
 leave();stopSay();backFn=home;$("#back").hidden=false;
 if(m)shm=m;if(i!=null)shi[shm]=i;
-const L=shm=="d"?SHD:shm=="r"?SHR:SHP,dlg=shm=="d",li=Math.min(Math.max(0,shi[shm]||0),L.length-1);shi[shm]=li;
+if(shm=="o"&&VDS==null){$("#app").innerHTML='<div style="color:#818cf8;font-size:12px">音読 · Shadowing</div><h1 class="sh-h">Đang chuẩn bị Ôn tập…</h1>';loadVd().then(r=>{VDS=r}).catch(()=>{VDS=[]}).then(()=>shadow("o"));return}
+const L=shm=="d"?SHD:shm=="r"?SHR:shm=="o"?OTL():SHP,dlg=shm=="d",li=Math.min(Math.max(0,shi[shm]||0),L.length-1);shi[shm]=li;
 try{localStorage.setItem("shp",JSON.stringify({m:shm,i:shi}))}catch(e){}
 const set=L[li],N=set.items.length,id=set.id;
 let idx=0,auto=false,tm=0,rec=null,recording=false,speaking=false,done=false;const mine={};
@@ -274,9 +278,9 @@ const go=d=>{if(idx+d>N-1){stopAuto();stopAll();mark();paint();toast("Đã hết
 const replay=()=>pickIdx(idx,1);
 const toggleRec=async()=>{if(recording){try{rec.stop()}catch(e){}return}stopAuto();stopAll();const k=idx;try{const st=await navigator.mediaDevices.getUserMedia({audio:true}),ch=[];rec=new MediaRecorder(st);rec.ondataavailable=e=>ch.push(e.data);rec.onstop=()=>{st.getTracks().forEach(t=>t.stop());recording=false;if(mine[k])URL.revokeObjectURL(mine[k]);mine[k]=URL.createObjectURL(new Blob(ch));paint()};rec.start();recording=true;paint()}catch(e){toast("Không mở được micro. Hãy cho phép quyền micro cho trang này.")}};
 const tg=(k,v,lab)=>`<button data-${k}="${v}" class="${SHO[k]==v?"on":""}">${lab}</button>`;
-$("#app").innerHTML=`<div style="color:#818cf8;font-size:12px">音読 · Shadowing</div><h1 class="sh-h">${shm=="r"?"":"Bài "}${set.n} · ${set.title}</h1>
-<div class="shm"><button class="shmb ${dlg?"on":""}" data-m="d"><span class="shi">🗣</span><b>Hội thoại 2 người</b><small>会話 · Nghe rồi nói theo vai A / B</small></button><button class="shmb ${shm=="p"?"on":""}" data-m="p"><span class="shi">📖</span><b>Đoạn văn 1 người</b><small>文章 · Mỗi bài một đoạn văn theo từ vựng và Hán tự của bài</small></button><button class="shmb ${shm=="r"?"on":""}" data-m="r"><span class="shi">📝</span><b>Luyện đọc</b><small>読み物 · 138 đoạn ngắn: L1–L3 của bạn và 94 đoạn theo từ vựng, chữ Hán từng bài (Bài 4–50)</small></button><button class="shmb" data-m="q"><span class="shi">💬</span><b>Vấn đáp</b><small>問答 · Nghe câu hỏi rồi tự trả lời, có tranh và không tranh (FE JPD113)</small></button></div>
-${shm=="r"?`<div class="rgp" id="rgp">${RG.map((g,k)=>`<button class="${k==rg?"on":""}" data-g="${k}">${g[0]}</button>`).join("")}</div>`:""}<div class="sht" id="sht">${L.map((x,k)=>`<button class="${k==li?"on":""}" data-t="${k}"${shm=="r"&&!RG[rg][1](x)?" hidden":""}><i>${x.n}</i>${x.title}${shd.has(x.id)?" ✓":""}</button>`).join("")}</div>
+$("#app").innerHTML=`<div style="color:#818cf8;font-size:12px">音読 · Shadowing</div><h1 class="sh-h">${shm=="r"||shm=="o"?"":"Bài "}${set.n} · ${set.title}</h1>
+<div class="shm"><button class="shmb ${dlg?"on":""}" data-m="d"><span class="shi">🗣</span><b>Hội thoại 2 người</b><small>会話 · Nghe rồi nói theo vai A / B</small></button><button class="shmb ${shm=="p"?"on":""}" data-m="p"><span class="shi">📖</span><b>Đoạn văn 1 người</b><small>文章 · Mỗi bài một đoạn văn theo từ vựng và Hán tự của bài</small></button><button class="shmb ${shm=="r"?"on":""}" data-m="r"><span class="shi">📝</span><b>Luyện đọc</b><small>読み物 · 138 đoạn ngắn: L1–L3 của bạn và 94 đoạn theo từ vựng, chữ Hán từng bài (Bài 4–50)</small></button><button class="shmb ${shm=="o"?"on":""}" data-m="o"><span class="shi">🔁</span><b>Ôn tập</b><small>復習 · Ôn riêng từng loại chữ: Hiragana, Katakana, Kanji (đoạn L1–L3 và Vấn đáp)</small></button><button class="shmb" data-m="q"><span class="shi">💬</span><b>Vấn đáp</b><small>問答 · Nghe câu hỏi rồi tự trả lời, có tranh và không tranh (FE JPD113)</small></button></div>
+${shm=="o"?`<div class="rgp" id="otp">${OT.map(g=>`<button class="${g[0]==ot?"on":""}" data-ot="${g[0]}"><span lang="ja">${g[1]}</span> ${g[2]}</button>`).join("")}</div><p class="otn">Đang ôn: <b>${OTN[ot]}</b>. Chữ ${OTN[ot]} được tô sáng, các loại chữ khác mờ đi. Chỉ giữ những câu có chữ ${OTN[ot]}.</p>`:""}${shm=="r"?`<div class="rgp" id="rgp">${RG.map((g,k)=>`<button class="${k==rg?"on":""}" data-g="${k}">${g[0]}</button>`).join("")}</div>`:""}<div class="sht" id="sht">${L.map((x,k)=>`<button class="${k==li?"on":""}" data-t="${k}"${shm=="r"&&!RG[rg][1](x)?" hidden":""}><i>${x.n}</i>${x.title}${shd.has(x.id)?" ✓":""}</button>`).join("")}</div>
 <div class="shw"><div class="shl"><div class="shs">${scene(set.scene,shm,set.si)}</div><div class="shc">
 <div id="shmeta"></div><div class="shsj"><button class="ib sst" id="shst" title="Ghi nhớ câu này (↓)">★</button><div id="shj"></div></div><div id="shr"></div><div id="shv"></div><div id="shwd"></div><div class="shturn" id="shturn" hidden>🎤 Đến lượt bạn: hãy nói câu này</div>
 <div class="gbar" id="gp"><i></i></div>
@@ -288,10 +292,10 @@ ${shm=="r"?`<div class="rgp" id="rgp">${RG.map((g,k)=>`<button class="${k==rg?"o
 function paint(){const it=cur(),a=AN[it.j];
 $("#shmeta").innerHTML=`<span>▤ câu ${idx+1}/${N}</span>${dlg?`<span class="spk ${it.sp}">${it.sp}</span>`:""}`;
 const sg=segment(it.j),PU=/^[、。！？・「」]$/;
-$("#shj").innerHTML=SHO.j?sg.map(c=>c.sp?" ":`<span class="tk"${c.ro&&c.ro!=c.s&&/[a-z]/i.test(c.ro)?` data-r="${c.ro}"`:""}>${c.s}</span>`).join(""):'<span class="m" style="font-size:20px">Nghe rồi nói theo…</span>';
+$("#shj").innerHTML=SHO.j?sg.map(c=>c.sp?" ":`<span class="tk${shm=="o"&&!PU.test(c.s)?(kind(c.s)==ot?" hl":" dim"):""}"${c.ro&&c.ro!=c.s&&/[a-z]/i.test(c.ro)?` data-r="${c.ro}"`:""}>${c.s}</span>`).join(""):'<span class="m" style="font-size:20px">Nghe rồi nói theo…</span>';
 $("#shr").textContent=SHO.r?sg.filter(c=>!c.sp&&!PU.test(c.s)).map(c=>c.ro||c.s).join(" "):"";document.querySelectorAll("#shj .tk").forEach(k=>k.onclick=()=>{document.querySelectorAll("#shj .tk.on").forEach(x=>x.classList.remove("on"));k.classList.add("on");const wt=k.textContent.trim();if(!wt||PU.test(wt))return;if(recording&&rec)return;stopAuto();stopAll();say(wt,SHO.sp)});$("#shv").textContent=SHO.v?it.v:"";
-const wl=[],ws=new Set();sg.forEach(c=>{if(c.sp||PU.test(c.s)||ws.has(c.s))return;ws.add(c.s);wl.push(c)});wl.forEach(c=>warm(c.s));
-$("#shwd").innerHTML=SHO.w?`<div class="wd-h">Phân tích từ <span>${wl.length} từ · bấm chữ để nghe, bấm ★ để học</span></div><div class="wd-l">${wl.map((c,k)=>`<div class="wd-c${c.m?"":" wd-nm"}${hs.has(c.s)?" wd-st":""}"><button class="wd-s" data-w="${k}" title="Thêm vào Ghi nhớ">★</button><button class="wd-j" data-wp="${k}">${c.s}</button><div class="wd-r">${c.h&&c.h!=c.s?c.h+" · ":""}${c.ro||""}</div><div class="wd-m">${c.m||"Chưa có nghĩa"}</div>${c.g&&!c.fn?`<div class="wd-g">${c.g}</div>`:""}</div>`).join("")}</div>`:"";
+const wl=[],ws=new Set();sg.forEach(c=>{if(c.sp||PU.test(c.s)||ws.has(c.s)||(shm=="o"&&kind(c.s)!=ot))return;ws.add(c.s);wl.push(c)});wl.forEach(c=>warm(c.s));
+$("#shwd").innerHTML=(SHO.w||shm=="o")&&wl.length?`<div class="wd-h">${shm=="o"?"Từ "+OTN[ot]+" trong câu":"Phân tích từ"} <span>${wl.length} từ · bấm chữ để nghe, bấm ★ để học</span></div><div class="wd-l">${wl.map((c,k)=>`<div class="wd-c${c.m?"":" wd-nm"}${hs.has(c.s)?" wd-st":""}"><button class="wd-s" data-w="${k}" title="Thêm vào Ghi nhớ">★</button><button class="wd-j" data-wp="${k}">${c.s}</button><div class="wd-r">${c.h&&c.h!=c.s?c.h+" · ":""}${c.ro||""}</div><div class="wd-m">${c.m||"Chưa có nghĩa"}</div>${c.g&&!c.fn?`<div class="wd-g">${c.g}</div>`:""}</div>`).join("")}</div>`:"";
 document.querySelectorAll("#shwd [data-wp]").forEach(b=>b.onclick=()=>{stopAuto();stopAll();say(wl[+b.dataset.wp].s,SHO.sp);paint()});
 document.querySelectorAll("#shwd [data-w]").forEach(b=>b.onclick=()=>{const c=wl[+b.dataset.w];if(hs.has(c.s)){hs.delete(c.s);toast("Đã bỏ khỏi Ghi nhớ")}else{hs.add(c.s);if(c.m)SHV[c.s]=c.m+(c.g&&!c.fn?" ("+c.g+")":"");toast("Đã thêm “"+c.s+"” vào Ghi nhớ")}persist();paint()});
 $("#shturn").hidden=!myTurn();$("#shst").classList.toggle("on",hs.has(it.j));
@@ -306,8 +310,9 @@ document.querySelectorAll("[data-role]").forEach(b=>b.classList.toggle("on",(SHO
 talk()}
 document.querySelectorAll("[data-m]").forEach(b=>b.onclick=()=>shadow(b.dataset.m));
 document.querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>shadow(shm,+b.dataset.t));
+const hlT=t=>shm=="o"?segment(t).map(c=>c.sp?" ":kind(c.s)==ot?`<span class="hl">${c.s}</span>`:c.s).join(""):t;
 const drawList=()=>{const bx=$("#shli"),pv=!dlg&&SHO.pv;bx.className=pv?"para":"";
-bx.innerHTML=pv?`<p class="pj">${set.items.map((x,k)=>`<span class="psn" data-k="${k}">${x.j}</span>`).join(" ")}</p>${SHO.v?`<p class="pm">${set.items.map((x,k)=>`<span class="slv" data-k="${k}">${x.v}</span>`).join(" ")}</p>`:""}`:set.items.map((x,k)=>`<div class="sl" data-k="${k}"><span class="pl">▶</span><div><b>${dlg?x.sp+"：":""}${x.j}</b><small>${x.v}</small></div></div>`).join("");
+bx.innerHTML=pv?`<p class="pj">${set.items.map((x,k)=>`<span class="psn" data-k="${k}">${hlT(x.j)}</span>`).join(" ")}</p>${SHO.v?`<p class="pm">${set.items.map((x,k)=>`<span class="slv" data-k="${k}">${x.v}</span>`).join(" ")}</p>`:""}`:set.items.map((x,k)=>`<div class="sl" data-k="${k}"><span class="pl">▶</span><div><b>${dlg?x.sp+"：":""}${hlT(x.j)}</b><small>${x.v}</small></div></div>`).join("");
 bx.querySelectorAll(".sl,.psn,.slv").forEach(r=>r.onclick=()=>{if(auto&&+r.dataset.k==idx){toggleAuto();return}pickIdx(+r.dataset.k,1)});paint()};
 drawList();
 document.querySelectorAll("[data-pv]").forEach(b=>b.onclick=()=>{SHO.pv=+b.dataset.pv;sv();drawList()});
@@ -321,6 +326,7 @@ $("#lp").onclick=()=>{SHO.loop=SHO.loop?0:1;sv();paint()};
 $("#ct").onclick=()=>toggleCont();
 document.querySelectorAll("[data-role]").forEach(b=>b.onclick=()=>{SHO.role=b.dataset.role==0?0:b.dataset.role;sv();stopAuto();stopAll();paint()});
 const vb=$("#vbs");if(vb){vb.value=VB;if(vb.value!=VB)vb.value="auto";vb.onchange=()=>{VB=vb.value;BV=null;try{localStorage.setItem("vb",VB)}catch(e){}}}
+document.querySelectorAll("#otp [data-ot]").forEach(b=>b.onclick=()=>{ot=b.dataset.ot;try{localStorage.setItem("otk",ot)}catch(e){}shi.o=0;shadow("o",0)});
 document.querySelectorAll("#rgp [data-g]").forEach(b=>b.onclick=()=>{rg=+b.dataset.g;document.querySelectorAll("#rgp [data-g]").forEach(x=>x.classList.toggle("on",x==b));document.querySelectorAll("#sht [data-t]").forEach(t=>{t.hidden=!RG[rg][1](L[+t.dataset.t])});const cur=document.querySelector("#sht [data-t=\""+li+"\"]");if(cur&&cur.hidden){const f=document.querySelector("#sht [data-t]:not([hidden])");if(f)f.click()}else{const ta=document.querySelector("#sht .on"),sb=document.querySelector("#sht");if(ta&&sb)sb.scrollLeft=ta.offsetLeft-sb.clientWidth/2+ta.clientWidth/2}});
 document.querySelectorAll(".shm button,.sht button,.shl button,.shopt button,.rgp button").forEach(noFocus);
 const ta=$("#sht .on"),sb=$("#sht");if(ta&&sb)sb.scrollLeft=ta.offsetLeft-sb.clientWidth/2+ta.clientWidth/2;
@@ -656,3 +662,4 @@ const CN={zunko:"東北ずん子",tsurugi:"中部つるぎ",metan:"四国めた�
 if(!CN[VC]&&VC!="nanami")VC="nanami";
 const sel=$("#vc");sel.value=VC;cr();sel.onchange=()=>{VC=sel.value;BV=null;FBW.clear();ensure(VC);try{localStorage.setItem("vc",VC)}catch(e){}cr();say("こんにちは")};
 save();home();
+startKanaFix();

@@ -4,6 +4,7 @@
 import { V, V2 } from "./vocab.js";
 import { roma, hira } from "../scripts/romaji.mjs";
 import { EXTRA_TEXT } from "./gloss_extra.js";
+import { staticWords } from "./jpnum.js";
 
 // [chữ, cách đọc (kana hoặc romaji khi ro=1), nghĩa / công dụng]
 const FN = [
@@ -94,6 +95,7 @@ function build() {
   for (const lesson of all) for (const line of lesson[1].split("\n")) { const p = line.split("|"); if (p[0] && p[1] && p[2]) words.push([p[0], p[1], p[2]]); }
   for (const [k, r, m] of words) { put(k, { h: r, m }); if (k != r) put(r, { h: r, m }); }
   for (const [k, r, m] of extra) { put(k, { h: r, m }); if (k != r) put(r, { h: r, m }); }
+  for (const [k, r, m] of staticWords()) put(k, { h: r, m, g: "số + đơn vị đếm" });
   for (const [k, r, m] of [...words, ...extra]) {
     if (k.endsWith("ます") && r.endsWith("ます")) addForms(k, r, m);
     else if (k.endsWith("い") && r.endsWith("い") && !/[ぁ-ん]い$/.test("") ) addAdj(k, r, m);
@@ -129,14 +131,16 @@ export function segment(text) {
   for (const t of out) { const p = res[res.length - 1]; if (p && !p.sp && !t.sp && !p.m && !t.m && !p.fn && !t.fn && p.g == "" && t.g == "" && p.s.length < 6) { p.s += t.s; p.h += t.h; p.ro = p.h ? rm(p.h) : ""; } else res.push(t); }
   return res;
 }
+// Chữ không bao giờ đứng đầu một từ: kana nhỏ (ゃゅょ…), っ, ー → không được cắt ngay trước chúng.
+const NOSTART = /[ゃゅょゎぁぃぅぇぉゕゖっャュョヮァィゥェォッー]/;
 function segRun(w, out) {
   const n = w.length, INF = 1e9, cost = new Array(n + 1).fill(INF), back = new Array(n + 1).fill(null);
   cost[0] = 0;
   for (let i = 0; i < n; i++) {
     if (cost[i] >= INF) continue;
     const rest = w.slice(i);
-    const relax = (L, c, mk) => { if (cost[i] + c < cost[i + L]) { cost[i + L] = cost[i] + c; back[i + L] = [i, mk]; } };
-    for (let L = Math.min(MAXL, rest.length); L >= 1; L--) { const e = D.get(rest.slice(0, L)); if (e) relax(L, 1 - L * .001 + (e.fn && i == 0 ? .05 : 0), () => ({ s: rest.slice(0, L), h: e.ro ? "" : e.h || "", ro: e.ro ? e.h : (e.h ? rm(e.h) : ""), m: e.m || "", g: e.g || "", fn: e.fn })); }
+    const relax = (L, c, mk) => { if (i + L < n && NOSTART.test(w[i + L])) return; if (cost[i] + c < cost[i + L]) { cost[i + L] = cost[i] + c; back[i + L] = [i, mk]; } };
+    for (let L = Math.min(MAXL, rest.length); L >= 1; L--) { const e = D.get(rest.slice(0, L)); if (e) relax(L, 1 - L * .001 + (e.fn && i == 0 ? .05 : 0) - (e.fn && i > 0 ? .02 : 0) + (i > 0 && w[i - 1] == "な" && rest.startsWith("ん") ? 1.5 : 0), () => ({ s: rest.slice(0, L), h: e.ro ? "" : e.h || "", ro: e.ro ? e.h : (e.h ? rm(e.h) : ""), m: e.m || "", g: e.g || "", fn: e.fn })); }
     const nm = rest.match(NUMRE);
     if (nm) {
       const n0 = /^[0-9０-９]/.test(nm[0]) ? nm[0].replace(/[０-９]/g, d => String(d.charCodeAt(0) - 65248)) : String(kanjiNum(nm[0]));
@@ -147,13 +151,16 @@ function segRun(w, out) {
     }
     const km = rest.match(KATA);
     if (km) relax(km[0].length, 3, () => ({ s: km[0], h: km[0], ro: rm(km[0]), m: "", g: "từ mượn / tên riêng (katakana)" }));
-    const c = rest[0];
-    relax(1, 6, () => ({ s: c, h: /[ぁ-ん]/.test(c) ? c : "", ro: /[ぁ-ん]/.test(c) ? rm(c) : "", m: "", g: "" }));
+    let u = 1; while (i + u < n && NOSTART.test(w[i + u])) { u++; if (/[っッ]/.test(w[i + u - 1]) && i + u < n) u++; }
+    const c = rest.slice(0, u), kc = /^[ぁ-ゖー]+$/.test(c);
+    relax(u, 6, () => ({ s: c, h: kc ? c : "", ro: kc ? rm(c) : "", m: "", g: "" }));
   }
   const seq = []; let k = n;
   while (k > 0) { const [i, mk] = back[k]; seq.push(mk()); k = i; }
   seq.reverse().forEach(x => out.push(x));
 }
+// Nạp thêm từ riêng (tên người dùng nhập…) vào từ điển; không ghi đè từ đã có.
+export const addWord = (k, h, m, g) => { build(); if (k && !D.has(k)) D.set(k, { h: h || k, m, g: g || "" }), k.length > MAXL && (MAXL = k.length); };
 export const WORD_MEANING = s => { build(); const e = D.get(s); return e && e.m ? e.m + (e.g && !e.fn ? " (" + e.g + ")" : "") : ""; };
 export const wordRomaji = s => { build(); const e = D.get(s); return e && e.h ? (e.ro ? e.h : rm(e.h)) : ""; };
 export const kanaRomaji = s => rm(s);

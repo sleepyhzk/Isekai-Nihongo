@@ -1,7 +1,8 @@
 // 問答 · Vấn đáp (FE JPD113): có tranh / không tranh, nằm trong mục Shadowing.
 import DATA from './vandap_data.json';
 import { judgeBest } from './vandap_judge.js';
-import { segment } from './gloss.js';
+import { segment, addWord } from './gloss.js';
+import { FIELDS, personalize, latinHints } from './vandap_me.js';
 
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const br = s => esc(s).replace(/\n/g, '<br>');
@@ -19,6 +20,7 @@ export function vandap(ctx) {
   const st = ld('vdp', { b: '1', m: 'pic', k: 0 });
   const best = ld('vds', {});
   const O = ld('vdo', { j: 1, r: 0, v: 0, w: 1, a: 1 });
+  const PF = ld('vdf', {});
   if (!DATA.bai[st.b]) st.b = '1';
   let rec = null, groups = [];
 
@@ -44,7 +46,7 @@ export function vandap(ctx) {
 <div class="sht" id="vdb">${Object.keys(B).map(b => `<button data-b="${b}" class="${b == st.b ? 'on' : ''}"><i>${B[b].title ? '★' : b}</i>${esc(B[b].title || 'Bài ' + b)}</button>`).join('')}</div>
 ${B[st.b].note ? `<div class="shhint" style="margin:0 0 10px">★ ${esc(B[st.b].note)}</div>` : ''}<div class="vd-seg" id="vdm"><button data-vm="pic" class="${st.m == 'pic' ? 'on' : ''}">🖼 Có tranh <span id="n-pic"></span></button><button data-vm="free" class="${st.m == 'free' ? 'on' : ''}">💭 Không tranh <span id="n-free"></span></button></div>
 <div class="vd-opt" id="vdo"><span>Hiện:</span><button data-o="j">Câu hỏi</button><button data-o="r">Romaji</button><button data-o="v">Nghĩa</button><button data-o="w">Phân tích từ</button><button data-o="a">Phân tích đáp án</button></div>
-<div class="sht" id="vdk"></div><div class="vd-card" id="vdc"></div>
+${st.m === 'free' ? meHTML() : ''}<div class="sht" id="vdk"></div><div class="vd-card" id="vdc"></div>
 <div class="vd-nav"><button class="sm2" id="vpv">⏮</button><span id="vpos"></span><button class="sm2" id="vnx">⏭</button></div>
 <div class="shhint">Bấm 🎤 để nói (Chrome/Edge, cho phép micro) hoặc gõ câu trả lời vào ô bên dưới. Điểm theo thang FE113: tối đa 15.</div>`;
     const cnt = x => { const b = DATA.bai[st.b]; return x == 'pic' ? new Set(b.pic.map(q => q.pic)).size + ' tranh · ' + b.pic.length + ' câu' : b.free.length + ' câu'; };
@@ -54,7 +56,7 @@ ${B[st.b].note ? `<div class="shhint" style="margin:0 0 10px">★ ${esc(B[st.b].
     document.querySelectorAll('#vdm [data-vm]').forEach(b => b.onclick = () => { stopRec(); stopSay(); st.m = b.dataset.vm; st.k = 0; save(); shell(); });
     document.querySelectorAll('#vdo [data-o]').forEach(b => { b.classList.toggle('on', !!O[b.dataset.o]); b.onclick = () => { O[b.dataset.o] = O[b.dataset.o] ? 0 : 1; sv('vdo', O); b.classList.toggle('on', !!O[b.dataset.o]); if (b.dataset.o == 'a') { $('#vdc').classList.toggle('no-aw', !O.a); return; } stopRec(); card(); }; });
     $('#vpv').onclick = () => go(-1); $('#vnx').onclick = () => go(1);
-    buildGroups(); pills(); card();
+    wireMe(); buildGroups(); pills(); card();
   }
   const save = () => sv('vdp', st);
   const go = d => { const k = st.k + d; if (k < 0 || k >= groups.length) return; stopRec(); stopSay(); st.k = k; save(); pills(); card(); scrollTo(0, 0); };
@@ -66,16 +68,39 @@ ${B[st.b].note ? `<div class="shhint" style="margin:0 0 10px">★ ${esc(B[st.b].
   }
 
   const hasBlank = t => /[○◯]/.test(t || '');
+  const A = (t, n) => `<div class="vd-a">${t && !hasBlank(t) ? `<button class="ib" data-a="say" data-t="${esc(t)}" title="Nghe">🔊</button>` : '<span class="ib"></span>'}<div><b>${esc(t)}</b><small>${esc(n)}</small></div></div>${t ? wordsHTML(t, 'Phân tích từ đáp án') : ''}`;
+  // Đáp án câu hỏi mở: tự điền theo "Thông tin của mình" nếu câu đó hỏi về bản thân.
+  function freeAns(x) {
+    const P = personalize(x, PF);
+    if (P && P.ok) {
+      P.reg.forEach(r => addWord(r[0], r[0], r[1], r[2]));
+      return `<div class="vd-h"><h5>✅ Đáp án mẫu <small class="vd-me-tag">✨ theo thông tin của bạn</small></h5>${A(...P.a[0])}${A(...P.a[1])}</div>`;
+    }
+    const tip = P ? `<p class="vd-note vd-me-need">💡 Câu này hỏi về bạn — nhập <b>${P.need.map(esc).join(', ')}</b> ở mục “Thông tin của mình” phía trên để đáp án tự điền.</p>` : `<p class="vd-note">Câu hỏi mở: thay ○○ bằng thông tin của chính bạn.</p>`;
+    return `<div class="vd-h"><h5>✅ Đáp án mẫu</h5>${A(x.tra_loi_1, x.nghia_1)}${A(x.tra_loi_2, x.nghia_2)}${tip}</div>`;
+  }
+  function refreshAns() {
+    const g = groups[st.k]; if (!g || st.m === 'pic') return;
+    document.querySelectorAll('#vdc .vd-q').forEach(q => { const x = g.qs.find(v => v.id == q.dataset.id), p = q.querySelector('[data-p="ans"]'); if (x && p) p.innerHTML = freeAns(x); });
+  }
+  const meHTML = () => `<details class="vd-me" id="vdme"${st.me ? ' open' : ''}><summary>📝 Thông tin của mình <small>— nhập 1 lần, đáp án câu hỏi về bạn sẽ tự điền</small></summary><div class="vd-mg">${FIELDS.map(f => `<label><span>${esc(f.l)}</span>${f.sel ? `<select data-f="${f.k}">${f.k == 'bw' ? '<option value="">—</option>' : ''}${f.sel.map(o => `<option${PF[f.k] == o ? ' selected' : ''}>${esc(o)}</option>`).join('')}</select>` : `<input data-f="${f.k}" type="text" ${f.num ? 'inputmode="numeric"' : 'lang="ja"'} autocomplete="off" placeholder="${esc(f.ph)}" value="${esc(PF[f.k] || '')}">`}</label>`).join('')}</div><p class="vd-mh" id="vdmh"></p></details>`;
+  function wireMe() {
+    const me = document.getElementById('vdme'); if (!me) return;
+    const hint = () => { const h = latinHints(PF); $('#vdmh').textContent = h.length ? '⚠ ' + h.join(', ') + ': hãy gõ bằng hiragana / katakana (ví dụ ナム) — chữ Latinh chưa được dùng để điền đáp án.' : ''; };
+    me.ontoggle = () => { st.me = me.open ? 1 : 0; save(); };
+    me.querySelectorAll('[data-f]').forEach(el => { el.oninput = el.onchange = () => { PF[el.dataset.f] = el.value; sv('vdf', PF); hint(); refreshAns(); }; });
+    hint();
+  }
+
   function qHTML(x) {
     const pic = st.m === 'pic';
     const qj = pic ? esc(x.disp).replace(/【(.*?)】/g, '<mark>$1</mark>') : esc(x.cau_hoi_doc);
     const ty = pic ? x.type : x.ten_chu_de;
     const vn = pic ? x.vn : x.nghia_vn;
-    const A = (t, n) => `<div class="vd-a">${t && !hasBlank(t) ? `<button class="ib" data-a="say" data-t="${esc(t)}" title="Nghe">🔊</button>` : '<span class="ib"></span>'}<div><b>${esc(t)}</b><small>${esc(n)}</small></div></div>${t ? wordsHTML(t, 'Phân tích từ đáp án') : ''}`;
     const hint = pic ? `<div class="vd-h"><h5>🎧 Nghe hiểu câu hỏi</h5><p>${br(x.ear)}</p></div>`
       : `<div class="vd-h"><h5>🧩 Mẫu câu</h5><p>${esc(x.cau_truc)}</p><h5>📚 Từ vựng</h5><p>${br(String(x.tu_vung).replace(/；/g, '\n'))}</p><h5>✔ Tự soát</h5><p>${esc(x.tu_soat_thong_tin)}</p></div>`;
     const ans = pic ? `<div class="vd-h"><h5>📝 Các bước làm</h5><p>${br(x.steps)}</p><h5>🧩 Mẫu câu</h5><p>${esc(x.pat)}</p><h5>✅ Đáp án mẫu</h5>${A(x.a1, x.n1)}${A(x.a2, x.n2)}<h5>⚠ Bẫy hay gặp</h5><p>${br(x.trap)}</p><h5>🔤 Phát âm</h5><p>${br(x.pron)}</p></div>`
-      : `<div class="vd-h"><h5>✅ Đáp án mẫu</h5>${A(x.tra_loi_1, x.nghia_1)}${A(x.tra_loi_2, x.nghia_2)}<p class="vd-note">Câu hỏi mở: thay ○○ bằng thông tin của chính bạn.</p></div>`;
+      : freeAns(x);
     return `<div class="vd-q" data-id="${esc(x.id)}">
 <div class="vd-qh"><span class="vd-ty">${esc(ty)}</span><span class="vd-bs" data-bs="${esc(x.id)}">${best[x.id] != null ? 'Cao nhất: ' + best[x.id] + '/15' : ''}</span></div>
 <div class="vd-qj${O.j ? '' : ' hid'}" data-a="peek"><span class="vd-jt">${qj}</span><span class="vd-hide">🎧 Nghe câu hỏi rồi trả lời… <u>bấm để xem câu hỏi</u></span></div>${O.r ? `<div class="vd-qr">${esc(rom(pic ? x.disp.replace(/[【】]/g, '') : x.cau_hoi_doc))}</div>` : ''}${O.v ? `<div class="vd-qv">${esc(vn)}</div>` : ''}${O.w ? wordsHTML(qSeg(x)) : ''}
