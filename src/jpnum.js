@@ -52,6 +52,48 @@ export function money(n) {
   return (man ? (man == 1 ? 'いち' : below1e4(man)) + 'まん' : '') + (r ? below1e4(r) : '');
 }
 
+// ===== Số + đơn vị đếm bất kỳ (dùng cho romaji của "40才", "3本", "500円"…) =====
+// Cách đọc số thuần: 0 → ぜろ, 1…99.999.999 → money(); ngoài khoảng đó trả về null.
+export const numKana = n => { n = int(n); return n === 0 ? 'ぜろ' : money(n); };
+// Đổi âm cuối cho các đơn vị đọc 4 = よ, 7 = しち, 9 = く (年, 時…).
+const fixEnd = (k, seven) => k.replace(/よん$/, 'よ').replace(/きゅう$/, 'く').replace(seven ? /なな$/ : /$^/, 'しち');
+// Âm ngắt っ cho 1, 6, 8, 10, 100… (いち→いっ, ろく→ろっ, はち→はっ, じゅう→じゅっ, ひゃく→ひゃっ). null nếu số không kết thúc như vậy.
+const sok = k => /(いち|ろく|はち)$/.test(k) ? k.slice(0, -1) + 'っ' : /じゅう$/.test(k) ? k.slice(0, -1) + 'っ' : /ひゃく$/.test(k) ? k.slice(0, -1) + 'っ' : null;
+const hourK = n => n === 0 ? 'れいじ' : n <= 12 ? hour(n) : fixEnd(numKana(n), false) + 'じ';
+// Trả về cách đọc kana (hiragana) của "<số><đơn vị>", hoặc null nếu chưa hỗ trợ.
+export function counter(n, unit) {
+  n = int(n); if (!(n >= 0)) return null;
+  const k = numKana(n); if (!k) return null;
+  const last = n % 10, S = sok(k);
+  switch (unit) {
+    case '才': case '歳': return (age(n) || k + 'さい');
+    case '月': return month(n) || k + 'がつ';
+    case '日': return day(n) || k + 'にち';
+    case '日間': return (n >= 1 && n <= 10 ? DAY[n] : n >= 1 && n <= 31 ? day(n) : k + 'にち') + 'かん';
+    case '時': return hourK(n);
+    case '時間': return hourK(n) + 'かん';
+    case '分': return (n >= 1 && n <= 59 ? minute(n) : k + 'ふん');
+    case '秒': return k + 'びょう';
+    case '円': return fixEnd(k, false) + 'えん';
+    case '年': return fixEnd(k, true) + 'ねん';
+    case '年生': return fixEnd(k, true) + 'ねんせい';
+    case '人': return n === 1 ? 'ひとり' : n === 2 ? 'ふたり' : fixEnd(k, false) + 'にん';
+    case '週間': return (/(いち|はち)$/.test(k) || /じゅう$/.test(k) ? S : k) + 'しゅうかん';
+    case '階': return S ? S + 'かい' : /さん$/.test(k) ? k + 'がい' : k + 'かい';
+    case '回': return (S || k) + (S ? 'かい' : 'かい');
+    case '冊': return (S || k) + 'さつ';
+    case '個': return (S || k) + 'こ';
+    case '本': return S ? S.replace(/っ$/, 'っ') + 'ぽん' : /さん$/.test(k) ? k + 'ぼん' : k + 'ほん';
+    case '枚': return k + 'まい';
+    case '台': return k + 'だい';
+    case '番': return k + 'ばん';
+    case 'つ': return ({ 1: 'ひとつ', 2: 'ふたつ', 3: 'みっつ', 4: 'よっつ', 5: 'いつつ', 6: 'むっつ', 7: 'ななつ', 8: 'やっつ', 9: 'ここのつ', 10: 'とお' })[n] || null;
+    case 'ドル': return k + 'どる';
+    case 'ユーロ': return k + 'ゆーろ';
+    default: return null;
+  }
+}
+
 // Danh sách [chữ, cách đọc, nghĩa] để nạp sẵn vào từ điển phân tích từ.
 export function staticWords() {
   const L = [];

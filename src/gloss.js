@@ -4,7 +4,7 @@
 import { V, V2 } from "./vocab.js";
 import { roma, hira } from "../scripts/romaji.mjs";
 import { EXTRA_TEXT } from "./gloss_extra.js";
-import { staticWords } from "./jpnum.js";
+import { staticWords, counter, numKana } from "./jpnum.js";
 
 // [chữ, cách đọc (kana hoặc romaji khi ro=1), nghĩa / công dụng]
 const FN = [
@@ -143,11 +143,16 @@ function segRun(w, out) {
     for (let L = Math.min(MAXL, rest.length); L >= 1; L--) { const e = D.get(rest.slice(0, L)); if (e) relax(L, 1 - L * .001 + (e.fn && i == 0 ? .05 : 0) - (e.fn && i > 0 ? .02 : 0) + (i > 0 && w[i - 1] == "な" && rest.startsWith("ん") ? 1.5 : 0), () => ({ s: rest.slice(0, L), h: e.ro ? "" : e.h || "", ro: e.ro ? e.h : (e.h ? rm(e.h) : ""), m: e.m || "", g: e.g || "", fn: e.fn })); }
     const nm = rest.match(NUMRE);
     if (nm) {
-      const n0 = /^[0-9０-９]/.test(nm[0]) ? nm[0].replace(/[０-９]/g, d => String(d.charCodeAt(0) - 65248)) : String(kanjiNum(nm[0]));
+      const n0 = /^[0-9０-９]/.test(nm[0]) ? nm[0].replace(/[０-９]/g, d => String.fromCharCode(d.charCodeAt(0) - 65248)) : String(kanjiNum(nm[0]));
       const after = rest.slice(nm[0].length); let cu = null;
       for (const [u, vi] of CNT) if (after.startsWith(u)) { cu = [u, vi]; break; }
-      if (cu && cu[1]) relax(nm[0].length + cu[0].length, 1.05, () => ({ s: nm[0] + cu[0], h: "", ro: "", m: `${n0} ${cu[1]}`, ro: CRO[cu[0]] ? `${n0} ${CRO[cu[0]]}` : "", rawro: 1, g: "số + đơn vị đếm" }));
-      relax(nm[0].length, 1.1, () => ({ s: nm[0], h: "", ro: "", m: n0, g: "số" }));
+      const nv = +n0;
+      if (cu && cu[1]) {
+        const kn = counter(nv, cu[0]);
+        relax(nm[0].length + cu[0].length, 1.05, () => ({ s: nm[0] + cu[0], h: kn || "", ro: kn ? rm(kn) : (CRO[cu[0]] ? `${n0} ${CRO[cu[0]]}` : ""), m: `${n0} ${cu[1]}`, g: "số + đơn vị đếm" }));
+      }
+      const kn0 = numKana(nv);
+      relax(nm[0].length, 1.1, () => ({ s: nm[0], h: kn0 || "", ro: kn0 ? rm(kn0) : "", m: n0, g: "số" }));
     }
     const km = rest.match(KATA);
     if (km) relax(km[0].length, 3, () => ({ s: km[0], h: km[0], ro: rm(km[0]), m: "", g: "từ mượn / tên riêng (katakana)" }));
